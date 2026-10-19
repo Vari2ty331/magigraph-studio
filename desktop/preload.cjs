@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('traceDesktop',{
  onPosition:fn=>ipcRenderer.on('trace-position',(_e,value)=>fn(value)),
  onImage:fn=>ipcRenderer.on('trace-image',(_e,image)=>fn(image)),
  onStatus:fn=>ipcRenderer.on('trace-status',(_e,shown)=>fn(shown)),
+ onFullToggle:fn=>ipcRenderer.on('trace-full-toggle',()=>fn()),
  onStep:fn=>ipcRenderer.on('trace-step',(_e,delta)=>fn(delta)),
  onError:fn=>ipcRenderer.on('trace-error',(_e,message)=>fn(message))
 });

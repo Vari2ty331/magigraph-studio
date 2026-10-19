@@ -172,6 +172,7 @@ if(window.traceDesktop){
  $('traceToggle').onclick=()=>{$('preview').checked=false;draw();window.traceDesktop.toggle();};
  window.traceDesktop.onStatus(shown=>{$('traceToggle').textContent=shown?'오버레이 숨기기':'오버레이 표시';});
  window.traceDesktop.onStep(stepTraceSelection);
+ window.traceDesktop.onFullToggle(()=>$('traceFull').click());
  window.traceDesktop.onError(notify);publishTrace(true);
 }
 

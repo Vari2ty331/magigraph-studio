@@ -28,3 +28,5 @@ All game drawing is manual. This program does not connect to or control the game
 Autosaves/preferences are stored on this computer under AppData, not in this folder.
 Export JSON to transfer drawings or keep backups. Close the app before replacing
 the extracted app folder with a newer version. AppData saves remain separate.
+
+- Ctrl+Shift+F: toggle full drawing / selected stroke in the overlay, even while the game has focus.

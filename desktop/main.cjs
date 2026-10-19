@@ -68,7 +68,7 @@ app.whenReady().then(()=>{
   if(phase==='start'){placementDrag={cursor:screen.getCursorScreenPoint(),bounds:overlay.getBounds()};return;}
   if(phase==='move'&&placementDrag){let cursor=screen.getCursorScreenPoint(),start=placementDrag;overlay.setPosition(start.bounds.x+cursor.x-start.cursor.x,start.bounds.y+cursor.y-start.cursor.y);}
  });
- const shortcuts=[['CommandOrControl+Shift+M',()=>setAlignment(!aligning)],['CommandOrControl+Shift+Space',toggle],['CommandOrControl+Shift+Right',()=>stepStroke(1)],['CommandOrControl+Shift+Left',()=>stepStroke(-1)]];
+ const shortcuts=[['CommandOrControl+Shift+F',()=>editor.webContents.send('trace-full-toggle')],['CommandOrControl+Shift+M',()=>setAlignment(!aligning)],['CommandOrControl+Shift+Space',toggle],['CommandOrControl+Shift+Right',()=>stepStroke(1)],['CommandOrControl+Shift+Left',()=>stepStroke(-1)]];
  const unavailable=shortcuts.filter(([key,action])=>!globalShortcut.register(key,action)).map(([key])=>key);
  if(unavailable.length)editor.webContents.once('did-finish-load',()=>editor.webContents.send('trace-error',`다른 프로그램에서 사용 중인 단축키: ${unavailable.join(', ')}. 오버레이 패널의 버튼을 사용하세요.`));
 

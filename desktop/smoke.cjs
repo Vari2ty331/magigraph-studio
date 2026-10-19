@@ -22,7 +22,7 @@ app.whenReady().then(async()=>{try{
  assert.deepEqual(markerKinds,{endpoints:2,controls:2,redLast:'move'});
  const layout=await editor.webContents.executeJavaScript(`(()=>{const sidebar=document.querySelector('main>aside'),edge=sidebar.getBoundingClientRect().right;return {fields:Array.from(sidebar.querySelectorAll('label:has(>input[type=number])')).every(label=>{let input=label.querySelector('input'),r=input.getBoundingClientRect(),text=document.createRange();text.selectNodeContents(label.firstChild);return text.getBoundingClientRect().right<=r.left+.5&&r.right<=edge;}),sliders:['X','Y'].every(axis=>document.getElementById('trace'+axis+'Slider').getBoundingClientRect().width>100)};})()`);
  assert.ok(layout.fields,'Sidebar number fields must not overlap labels or escape the sidebar');assert.ok(layout.sliders);
- for(const key of ['CommandOrControl+Shift+Right','CommandOrControl+Shift+Left'])if(!globalShortcut.isRegistered(key)){assert.ok(startupMessage.includes(key),'Shortcut conflicts must be reported');console.log('Shortcut already owned by another running app:',key);}
+ for(const key of ['CommandOrControl+Shift+Right','CommandOrControl+Shift+Left','CommandOrControl+Shift+F'])if(!globalShortcut.isRegistered(key)){assert.ok(startupMessage.includes(key),'Shortcut conflicts must be reported');console.log('Shortcut already owned by another running app:',key);}
  assert.equal(result.lines,2);assert.equal(result.points,4);assert.deepEqual(result.center,['0','0']);assert.equal(result.panel,true);
  // Wait for the image decode in the receiving renderer before capturing it.
  await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');if(img.src&&img.complete)resolve();else img.onload=resolve;})`);
@@ -101,16 +101,18 @@ app.whenReady().then(async()=>{try{
  await editor.webContents.executeJavaScript(`loadCharacterPreset('footballer-seven')`);
  const preset=await editor.webContents.executeJavaScript(`window.magigraph.getDesign()`);assert.equal(preset.shapes.length,60);assert.ok(preset.shapes[0].id.startsWith('footballer-'));console.log('Footballer preset loads in desktop');
  // Full view must include all 60 strokes even without selection or during playback.
- await editor.webContents.executeJavaScript(`(()=>{document.getElementById('step').value=1;document.getElementById('step').dispatchEvent(new Event('input'));document.getElementById('traceFull').checked=true;document.getElementById('traceFull').dispatchEvent(new Event('change'));})()`);
+ await editor.webContents.executeJavaScript(`(()=>{document.getElementById('step').value=1;document.getElementById('step').dispatchEvent(new Event('input'));})()`);
+ editor.webContents.send('trace-full-toggle');
  const fullDrawing=await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{let xml=new DOMParser().parseFromString(decodeURIComponent(img.src.slice(img.src.indexOf(',')+1)),'image/svg+xml'),ink=xml.querySelector('[data-overlay-art="full"]');if(ink?.children.length===60)resolve({count:ink.children.length,numbers:xml.querySelectorAll('[data-shape-number]').length,handles:xml.querySelectorAll('[data-handle]').length});};new MutationObserver(check).observe(img,{attributes:true});check();})`);
  assert.deepEqual(fullDrawing,{count:60,numbers:60,handles:0});
  assert.equal(await editor.webContents.executeJavaScript(`JSON.parse(localStorage.getItem('magigraph-trace-v1')).traceFull`),true);
- await editor.webContents.executeJavaScript(`document.getElementById('traceFull').checked=false;document.getElementById('traceFull').dispatchEvent(new Event('change'));document.querySelectorAll('#layers .layer>button:first-child')[1].click();`);
+ editor.webContents.send('trace-full-toggle');
+ await editor.webContents.executeJavaScript(`document.querySelectorAll('#layers .layer>button:first-child')[1].click();`);
  const selectedOnly=await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{let xml=new DOMParser().parseFromString(decodeURIComponent(img.src.slice(img.src.indexOf(',')+1)),'image/svg+xml'),ink=xml.querySelector('[data-overlay-art="selected"]');if(ink?.children.length===1)resolve({count:ink.children.length,numbers:xml.querySelectorAll('[data-shape-number]').length,handles:xml.querySelectorAll('[data-handle]').length});};new MutationObserver(check).observe(img,{attributes:true});check();})`);
  assert.equal(selectedOnly.count,1);assert.equal(selectedOnly.numbers,1);assert.ok(selectedOnly.handles>0);
  assert.equal(await editor.webContents.executeJavaScript(`JSON.parse(localStorage.getItem('magigraph-trace-v1')).traceFull`),false);
  await editor.webContents.executeJavaScript(`document.getElementById('traceFull').checked=true;document.getElementById('traceFull').dispatchEvent(new Event('change'));`);
- console.log('Full drawing on/off, unselected full view, playback independence and persisted preference passed.');
+ console.log('Full-drawing shortcut dispatch on/off, checkbox synchronization, playback independence and persisted preference passed.');
  await editor.webContents.executeJavaScript(`document.querySelector('#layers button').click();document.getElementById('step').value=document.getElementById('step').max;document.getElementById('step').dispatchEvent(new Event('input'));document.getElementById('numbers').checked=true;document.getElementById('numbers').dispatchEvent(new Event('change'));window.scrollTo(0,0);`);
  await new Promise(resolve=>setTimeout(resolve,150));
  const badgeCount=await editor.webContents.executeJavaScript(`({badges:document.querySelectorAll('#numberLabels [data-shape-number]').length,shapes:window.magigraph.getDesign().shapes.length})`);assert.deepEqual(badgeCount,{badges:60,shapes:60});
