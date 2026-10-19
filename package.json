@@ -1,6 +1,6 @@
 {
   "name": "magigraph-studio",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Manual Magigraph design and tracing companion",
   "main": "desktop/main.cjs",

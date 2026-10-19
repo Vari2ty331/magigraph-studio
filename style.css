@@ -16,3 +16,18 @@ input[type=range]{display:block;min-width:0;margin:6px 0 12px}
 .axis-control{margin:12px 0}.axis-control label{margin-bottom:4px}.trace-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.trace-actions button{margin:0}
 .marker-legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;color:#d8c98e;font-size:12px;margin:12px 0}
 .marker-legend span{display:inline-flex;gap:6px;align-items:center}.marker-icon{display:inline-block;width:8px;height:8px;background:#ffe52e;border:1px solid #66502a}.marker-icon.endpoint{border-radius:50%}.marker-icon.control{transform:rotate(45deg)}
+
+.canvas-stage{display:grid;grid-template-columns:minmax(0,1fr) 148px;gap:12px;align-items:start;margin-top:14px}
+.canvas-stage #canvas{margin:0;min-height:0;aspect-ratio:1}
+.canvas-legend{border:1px solid #485459;background:#253034;border-radius:6px;padding:12px;margin-top:12px}
+.canvas-legend h2{margin:0 0 12px;font-size:12px}
+.canvas-legend .marker-legend{display:grid;gap:10px;margin:0}
+.canvas-legend .hint{font-size:11px;line-height:1.8}.canvas-legend label{font-size:11px}
+.canvas-legend details{margin-top:12px}.canvas-legend input[type=range]{margin-bottom:0}
+.marker-icon.move{background:#df2828;border-color:#573d25;border-radius:50%}
+#strokeNavigation{border-bottom:1px solid #364146;padding-bottom:6px}#strokeNavigation .trace-actions{display:grid;grid-template-columns:1fr 1fr}
+kbd{font:11px Consolas,monospace;color:#d8c98e}
+@media(max-width:1250px){.canvas-stage{grid-template-columns:minmax(0,1fr)}.canvas-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:0}.canvas-legend h2{grid-column:1/-1;margin:0}.canvas-legend .hint{margin:0}.canvas-legend details{grid-column:1/-1;margin:0}.canvas-legend details[open]{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}.canvas-legend summary{grid-column:1/-1}}
+@media(max-width:600px){.canvas-legend{grid-template-columns:1fr}.canvas-legend details[open]{grid-template-columns:1fr}}
+
+header>div:first-child{flex:0 0 auto}header h1{white-space:nowrap;font-size:clamp(22px,2vw,27px)}header .actions{flex:1}@media(max-width:600px){header h1{white-space:normal;word-break:keep-all}}

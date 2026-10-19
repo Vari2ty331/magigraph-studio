@@ -78,11 +78,20 @@ app.whenReady().then(async()=>{try{
  await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{let src=decodeURIComponent(img.src);if(src.includes('data-id="q"')&&src.includes('data-marker="control"'))resolve();};new MutationObserver(check).observe(img,{attributes:true});check();})`);
  const overlayMarkers=await overlay.webContents.executeJavaScript(`(()=>{const xml=new DOMParser().parseFromString(decodeURIComponent(document.getElementById('trace').src).split(',').slice(1).join(','),'image/svg+xml');const group=xml.documentElement.lastElementChild;return{red:group.lastElementChild.getAttribute('data-marker'),control:group.querySelector('[data-marker="control"]').tagName};})()`);
  assert.deepEqual(overlayMarkers,{red:'move',control:'rect'});
+ const numberView=await editor.webContents.executeJavaScript(`(()=>{
+ document.getElementById('numbers').checked=true;document.getElementById('numbers').dispatchEvent(new Event('change'));
+ document.getElementById('preview').checked=true;document.getElementById('preview').dispatchEvent(new Event('change'));
+ const badges=[...document.querySelectorAll('#numberLabels [data-shape-number]')];
+ return{numbers:badges.map(b=>b.querySelector('text').textContent),positions:badges.map(b=>[b.querySelector('circle').getAttribute('cx'),b.querySelector('circle').getAttribute('cy')]),readable:badges.every(b=>b.querySelector('text').getBoundingClientRect().width>0),handles:document.getElementById('handles').children.length,rightNavigation:!!document.getElementById('traceNext').closest('aside.right'),rightShortcuts:!!document.getElementById('desktopShortcuts').closest('aside.right'),legendInCenter:!!document.getElementById('handleSize').closest('.canvas-stage')};})()`);
+ assert.deepEqual(numberView.numbers,['1','2']);assert.notDeepEqual(numberView.positions[0],numberView.positions[1]);assert.ok(numberView.readable);assert.equal(numberView.handles,0);assert.ok(numberView.rightNavigation&&numberView.rightShortcuts&&numberView.legendInCenter);
+ await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{if(decodeURIComponent(img.src).includes('data-shape-number="1"'))resolve();};new MutationObserver(check).observe(img,{attributes:true});check();})`);
+ await editor.webContents.executeJavaScript(`document.getElementById('preview').checked=false;document.getElementById('preview').dispatchEvent(new Event('change'));`);
  // Use the same IPC dispatch as the global shortcut, while the overlay is hidden.
  const hideForStep=new Promise(resolve=>overlay.once('hide',resolve));await editor.webContents.executeJavaScript(`document.getElementById('traceToggle').click()`);await hideForStep;
  const shownByStep=new Promise(resolve=>overlay.once('show',resolve));
  await editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onStep(delta=>{if(delta===1)resolve();});window.traceDesktop.step(1);})`);await shownByStep;
  assert.equal(overlay.isVisible(),true);assert.equal(overlay.isFocused(),false);
+ await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{if(decodeURIComponent(img.src).includes('data-shape-number="2"'))resolve();};new MutationObserver(check).observe(img,{attributes:true});check();})`);
  assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('traceSelection').textContent`),'2 / 2 · 곡선');
  await editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onStep(delta=>{if(delta===-1)resolve();});document.getElementById('tracePrev').click();})`);
  assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('traceSelection').textContent`),'1 / 2 · 곡선');
@@ -91,7 +100,10 @@ app.whenReady().then(async()=>{try{
  console.log('Desktop smoke passed: rendering, non-activating alignment, mouse pin click, delayed click-through redraw, visibility recovery, position persistence and guides.');
  await editor.webContents.executeJavaScript(`loadCharacterPreset('footballer-seven')`);
  const preset=await editor.webContents.executeJavaScript(`window.magigraph.getDesign()`);assert.equal(preset.shapes.length,60);assert.ok(preset.shapes[0].id.startsWith('footballer-'));console.log('Footballer preset loads in desktop');
- await editor.webContents.executeJavaScript(`document.querySelector('#layers button').click();document.getElementById('tracePanel').scrollIntoView({block:'start'});`);
+ await editor.webContents.executeJavaScript(`document.querySelector('#layers button').click();document.getElementById('numbers').checked=true;document.getElementById('numbers').dispatchEvent(new Event('change'));window.scrollTo(0,0);`);
+ await new Promise(resolve=>setTimeout(resolve,150));
+ const badgeCount=await editor.webContents.executeJavaScript(`({badges:document.querySelectorAll('#numberLabels [data-shape-number]').length,shapes:window.magigraph.getDesign().shapes.length})`);assert.deepEqual(badgeCount,{badges:60,shapes:60});
+ console.log('Number badges in preview/overlay and 60-shape numbering passed.');
  fs.writeFileSync(path.join(app.isPackaged?app.getPath('userData'):__dirname,'smoke-editor.png'),(await editor.webContents.capturePage()).toPNG());
  clearTimeout(timer);app.exit(0);
  }catch(e){console.error(e);clearTimeout(timer);app.exit(1);}});

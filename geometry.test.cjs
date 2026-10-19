@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('app.js','utf8').split('function draw(){')[0];
 const context={document:{getElementById(){}}};vm.createContext(context);
-vm.runInContext(source+`;globalThis.api={validate,contained,world,width,selectionFrame,transformFromPointer,moveHandle};`,context);
+vm.runInContext(source+`;globalThis.api={validate,contained,world,width,selectionFrame,transformFromPointer,moveHandle,numberAnchor};`,context);
 const {validate,contained,width}=context.api;
 const base={version:1,settings:{stroke:1,outlineRatio:.014},shapes:[]};
 const shape=(type,extra={})=>({id:'a',type,x:0,y:0,size:20,rotation:0,...extra});
@@ -61,3 +61,9 @@ console.log('Endpoint-midpoint move marker checks passed');
 
 for(const name of ['round-character','striped-character','footballer-seven'])validate(JSON.parse(fs.readFileSync('designs/'+name+'.json','utf8')));
 console.log('All shipped presets pass simulator validation');
+
+const numbered={id:'numbered',type:'quadratic',x:0,y:0,size:1,rotation:0,points:[{x:10,y:20},{x:20,y:0},{x:30,y:20}]};
+assert.deepEqual(JSON.parse(JSON.stringify(context.api.numberAnchor(numbered))),{x:20,y:10});
+const shiftedNumber=JSON.parse(JSON.stringify(numbered));shiftedNumber.points=shiftedNumber.points.map(p=>({x:p.x-15,y:p.y+5}));
+assert.deepEqual(JSON.parse(JSON.stringify(context.api.numberAnchor(shiftedNumber))),{x:5,y:15});
+console.log('Shape-number anchors follow curve geometry, not shared object origins');

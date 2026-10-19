@@ -92,3 +92,9 @@ The sidebar uses aligned input rows rather than floating fields. X/Y each offer 
 Ctrl+Shift+Left/Right reveals the previous/next selected stroke without focusing the editor, including when the overlay was hidden. The panel also provides previous/next buttons and a stroke counter. Shortcut registration conflicts are reported instead of silently ignored.
 
 Yellow circles mark endpoints; yellow diamonds mark curve controls. Both retain the game's yellow palette, with a red translation circle painted above the guides and other markers, including quadratic curves. Alt-drag can access a curve control that overlaps the red marker. Editor and transparent overlay share the same marker renderer so shape and screen-pixel sizes match.
+
+## Canvas numbering and controls
+
+도형 번호 is independent of 미리보기. Badges attach to actual curve midpoints instead of JSON translation origins, avoid neighboring badges when space permits, and follow construction-order numbering. The selected stroke's badge also appears in the desktop overlay when enabled. Number visibility is saved as a view preference, and preset loading retains it. These are visual guides only; design JSON and SVG art exports do not gain extra shapes.
+
+Previous/next stroke buttons, the selected-stroke counter, and desktop shortcut hints are grouped above the right-hand shape list. 편집 안내점 is a compact legend beside the center canvas, containing endpoint/control/move marker descriptions and marker-size controls. On narrower windows it moves below the canvas instead of covering the artwork.
