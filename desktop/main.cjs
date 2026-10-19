@@ -1,4 +1,5 @@
-const {app,BrowserWindow,ipcMain,globalShortcut,session,screen}=require('electron');
+const {app,BrowserWindow,ipcMain,globalShortcut,session,screen,clipboard}=require('electron');
+const fs=require('node:fs/promises');
 const path=require('node:path');
 // Stable transparent-window rendering on this Windows/NAS setup.
 app.disableHardwareAcceleration();
@@ -49,6 +50,16 @@ app.whenReady().then(()=>{
  editor.loadFile(path.join(__dirname,'..','index.html'),designArg?{query:{design:designArg.split('=')[1]}}:{});
  editor.on('closed',()=>app.quit());
  editor.webContents.on('did-finish-load',sendScreenBounds);
+ // Packaged file:// resources cannot rely on browser fetch. Only expose bundled assets.
+ const readableResources=new Set(['AI-GUIDE.md',...['round-character','striped-character','footballer-seven'].map(name=>`designs/${name}.json`)]);
+ ipcMain.handle('read-resource',async(e,name)=>{
+  if(e.sender!==editor.webContents||!readableResources.has(name))throw Error('허용되지 않은 자료입니다.');
+  return fs.readFile(path.join(__dirname,'..',name),'utf8');
+ });
+ ipcMain.handle('copy-text',(e,text)=>{
+  if(e.sender!==editor.webContents||typeof text!=='string'||text.length>2000000)throw Error('복사할 안내문이 올바르지 않습니다.');
+  return clipboard.writeText(text);
+ });
  for(const event of ['display-added','display-removed','display-metrics-changed'])screen.on(event,sendScreenBounds);
  ipcMain.on('trace-step-request',(e,delta)=>{if(e.sender===editor.webContents&&(delta===1||delta===-1))stepStroke(delta);});
  ipcMain.on('trace-update',(e,data)=>{

@@ -1,5 +1,7 @@
 const {contextBridge,ipcRenderer}=require('electron');
 contextBridge.exposeInMainWorld('traceDesktop',{
+ readResource:name=>ipcRenderer.invoke('read-resource',name),
+ copyText:text=>ipcRenderer.invoke('copy-text',text),
  update:data=>ipcRenderer.send('trace-update',data),
  step:delta=>ipcRenderer.send('trace-step-request',delta),
  onBounds:fn=>ipcRenderer.on('trace-bounds',(_e,value)=>fn(value)),

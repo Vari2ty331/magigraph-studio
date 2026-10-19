@@ -118,7 +118,13 @@ window.magigraph={getDesign:()=>clone(doc),setDesign:loadDesign,validate:d=>vali
 try{let saved=localStorage.getItem('magigraph-studio-v1');if(saved){doc=validate(JSON.parse(saved));if(doc.settings.stroke===1&&doc.settings.outlineRatio===.014){let calibrated=clone(doc);calibrated.settings.stroke=1.25;calibrated.settings.outlineRatio=.02;try{validate(calibrated);history.push(clone(doc));doc=calibrated;notify('스크린샷 기준 두께로 기본값을 보정했습니다. 되돌리기로 이전 값으로 복원할 수 있습니다.');}catch{notify('기존 도안을 보호하기 위해 두께를 유지했습니다. 경계 근처 도형을 조정한 뒤 스크린샷 기준 적용을 눌러 주세요.');}}}}catch(e){notify('저장된 도안을 복원하지 못했습니다: '+e.message);}visible=doc.shapes.length;$('stroke').value=doc.settings.stroke;$('ratio').value=doc.settings.outlineRatio;try{let view=JSON.parse(localStorage.getItem('magigraph-view-v1')||'null');if(view){$('gameGuide').checked=view.gameGuide!==false;$('grid').checked=view.grid===true;$('numbers').checked=view.numbers===true;}}catch{}setTool('select');sync();$('refresh').click();
 
 
-async function loadCharacterPreset(name='round-character'){if(!['round-character','striped-character','footballer-seven'].includes(name))return;try{let response=await fetch(`designs/${name}.json`,{cache:'no-store'});if(!response.ok)throw Error('도안 파일을 불러오지 못했습니다.');loadDesign(await response.json());$('preview').checked=true;draw();notify(`참고 캐릭터 도안: 곡선 ${doc.shapes.length}개. 미리보기를 해제하면 개별 편집할 수 있습니다.`);}catch(e){notify(e.message);}}
+async function readBundledText(name){
+ if(window.traceDesktop?.readResource)return window.traceDesktop.readResource(name);
+ const response=await fetch(name,{cache:'no-store'});
+ if(!response.ok)throw Error('자료를 불러오지 못했습니다: '+name);
+ return response.text();
+}
+async function loadCharacterPreset(name='round-character'){if(!['round-character','striped-character','footballer-seven'].includes(name))return;try{loadDesign(JSON.parse(await readBundledText(`designs/${name}.json`)));$('preview').checked=true;draw();notify(`참고 캐릭터 도안: 곡선 ${doc.shapes.length}개. 미리보기를 해제하면 개별 편집할 수 있습니다.`);}catch(e){notify(e.message);}}
 $('characterPreset').onclick=()=>loadCharacterPreset('round-character');
 $('stripedPreset').onclick=()=>loadCharacterPreset('striped-character');
 $('footballerPreset').onclick=()=>loadCharacterPreset('footballer-seven');
@@ -126,7 +132,7 @@ const requestedDesign=new URLSearchParams(location.search).get('design');
 if(['round-character','striped-character','footballer-seven'].includes(requestedDesign))loadCharacterPreset(requestedDesign);
 
 function parseDesignText(value){return JSON.parse(value.trim().replace(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i,'$1'));}
-$('copyAi').onclick=async()=>{try{let response=await fetch('AI-GUIDE.md');if(!response.ok)throw Error('안내문을 불러오지 못했습니다.');let guide=await response.text();let prompt='첨부한 참고 이미지 또는 설명을 아래 규칙에 맞는 마기그래프 도안으로 재현해 주세요. 최대 60개 도형을 사용하고, 완전한 JSON을 하나의 코드 블록으로 출력해 주세요. 특징적인 윤곽과 표정을 우선하고 필요한 단순화는 알려 주세요.\n\n'+guide;if($('includeDesign').checked)prompt+='\n\n수정할 현재 도안 JSON:\n```json\n'+JSON.stringify(doc,null,2)+'\n```';$('aiPrompt').value=prompt;try{await navigator.clipboard.writeText(prompt);notify('AI 안내문을 복사했습니다. 원하는 AI에 참고 이미지와 함께 붙여 넣으세요.');}catch{$('aiPrompt').focus();$('aiPrompt').select();notify('자동 복사가 차단되었습니다. 선택된 안내문을 Ctrl/Cmd+C로 복사하세요.');}}catch(e){notify(e.message);}};
+$('copyAi').onclick=async()=>{try{let guide=await readBundledText('AI-GUIDE.md');let prompt='첨부한 참고 이미지 또는 설명을 아래 규칙에 맞는 마기그래프 도안으로 재현해 주세요. 최대 60개 도형을 사용하고, 완전한 JSON을 하나의 코드 블록으로 출력해 주세요. 특징적인 윤곽과 표정을 우선하고 필요한 단순화는 알려 주세요.\n\n'+guide;if($('includeDesign').checked)prompt+='\n\n수정할 현재 도안 JSON:\n```json\n'+JSON.stringify(doc,null,2)+'\n```';$('aiPrompt').value=prompt;try{if(window.traceDesktop?.copyText)await window.traceDesktop.copyText(prompt);else await navigator.clipboard.writeText(prompt);notify('AI 안내문을 복사했습니다. 원하는 AI에 참고 이미지와 함께 붙여 넣으세요.');}catch{$('aiPrompt').focus();$('aiPrompt').select();notify('자동 복사가 차단되었습니다. 선택된 안내문을 Ctrl/Cmd+C로 복사하세요.');}}catch(e){notify(e.message);}};
 
 for(let id of ['handleSize','handleWidth'])$(id).oninput=()=>draw();
 new ResizeObserver(()=>draw()).observe($('canvas'));

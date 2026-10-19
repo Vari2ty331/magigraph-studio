@@ -1,4 +1,4 @@
-const {app,BrowserWindow,globalShortcut}=require('electron');
+const {app,BrowserWindow,globalShortcut,clipboard}=require('electron');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -10,6 +10,22 @@ app.whenReady().then(async()=>{try{
 
  const editor=wins.find(w=>w.webContents.getURL().endsWith('/index.html')),overlay=wins.find(w=>w.webContents.getURL().endsWith('/overlay.html'));
  const startupMessage=await editor.webContents.executeJavaScript(`document.getElementById('message').textContent`);
+ const previousClipboard=await clipboard.readText();
+ try{
+  const guide=fs.readFileSync(path.join(__dirname,'..','AI-GUIDE.md'),'utf8');
+  // Exercise the real button with fetch unavailable, as in a packaged file:// renderer.
+  const prompt=await editor.webContents.executeJavaScript(`(async()=>{
+   const savedFetch=window.fetch;window.fetch=()=>Promise.reject(Error('Failed to fetch'));
+   try{await document.getElementById('copyAi').onclick();return document.getElementById('aiPrompt').value;}finally{window.fetch=savedFetch;}
+  })()`);
+  assert.ok(prompt.endsWith(guide.replace(/\r\n/g,'\n')));assert.equal((await clipboard.readText()).replace(/\r\n/g,'\n'),prompt);
+  assert.ok((await editor.webContents.executeJavaScript(`document.getElementById('message').textContent`)).includes('복사했습니다'));
+  const included=await editor.webContents.executeJavaScript(`(async()=>{document.getElementById('includeDesign').checked=true;await document.getElementById('copyAi').onclick();document.getElementById('includeDesign').checked=false;return document.getElementById('aiPrompt').value;})()`);
+  assert.ok(included.includes('수정할 현재 도안 JSON:'));
+  assert.equal(await editor.webContents.executeJavaScript(`window.traceDesktop.readResource('../package.json').then(()=>false,()=>true)`),true);
+  console.log('AI guide copy works without fetch; clipboard content and resource allowlist passed.');
+ }finally{await clipboard.writeText(previousClipboard);}
+
  const result=await editor.webContents.executeJavaScript(`(()=>{
  window.magigraph.setDesign({version:1,settings:{stroke:1.25,outlineRatio:.02},shapes:[{id:'smoke-curve',type:'cubic',x:0,y:0,size:1,rotation:0,points:[{x:-30,y:-15},{x:-25,y:25},{x:25,y:-25},{x:30,y:15}]}]});
  document.querySelector('#layers button').click();
