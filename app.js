@@ -156,7 +156,7 @@ function publishTrace(place=false){
  if(s&&doc.shapes.indexOf(s)<visible&&!$('preview').checked){let guides=el('g');drawSelectionHandles(s,guides,{radius:Number($('handleSize').value)*50/diameter,line:Number($('handleWidth').value)*100/diameter});svg.append(guides);}
  // The display-only SVG needs no cursor styles; keep the overlay CSP strict.
  for(let node of svg.querySelectorAll('[style]'))node.removeAttribute('style');
- window.traceDesktop.update({x,y,diameter,opacity,place,image:'data:image/svg+xml,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))});
+ window.traceDesktop.update({x,y,diameter,opacity,place,full,selection:$('traceSelection').textContent,image:'data:image/svg+xml,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))});
 }
 function syncTraceSliders(){
  for(let axis of ['X','Y']){let value=Number($('trace'+axis).value),slider=$('trace'+axis+'Slider');if(!Number.isFinite(value))continue;slider.min=Math.max(-30000,Math.min(Number(slider.min),value));slider.max=Math.min(30000,Math.max(Number(slider.max),value));slider.value=value;}
@@ -171,6 +171,12 @@ if(window.traceDesktop){
  window.traceDesktop.onBounds(bounds=>{for(let axis of ['X','Y']){let limits=bounds[axis.toLowerCase()];$('trace'+axis+'Slider').min=limits.min;$('trace'+axis+'Slider').max=limits.max;}syncTraceSliders();});
  $('traceFull').onchange=()=>{publishTrace();saveTracePreferences();if($('traceFull').checked)window.traceDesktop.restore();};
  $('desktopShortcuts').hidden=false;
+ $('tracePanelToggle').hidden=false;
+ let panelOpen=false;
+ $('tracePanelToggle').onclick=()=>window.traceDesktop.panel(!panelOpen);
+ window.traceDesktop.onPanelStatus(value=>{panelOpen=value;$('tracePanelVisible').checked=value;$('tracePanelToggle').textContent=value?'조작 패널 숨기기':'조작 패널 표시';});
+ $('tracePanelVisible').onchange=()=>window.traceDesktop.panel($('tracePanelVisible').checked);
+ window.traceDesktop.onPlacement(({key,value})=>{let id={x:'traceX',y:'traceY',diameter:'traceDiameter',opacity:'traceOpacity'}[key];if(!id)return;$(id).value=value;syncTraceSliders();publishTrace(key!=='opacity');saveTracePreferences();});
  $('traceAlign').onchange=()=>window.traceDesktop.align($('traceAlign').checked);
  window.traceDesktop.onAlignment(value=>{$('traceAlign').checked=value;$('traceMode').textContent=value?'위치 맞추기 · 오버레이를 드래그하세요. 끝나면 고정하세요.':'고정됨 · 마우스 입력은 게임으로 전달됩니다.';});
  window.traceDesktop.onPosition(({x,y})=>{$('traceX').value=x;$('traceY').value=y;syncTraceSliders();saveTracePreferences();});

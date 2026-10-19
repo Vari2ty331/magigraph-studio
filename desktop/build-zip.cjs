@@ -10,7 +10,7 @@ async function main(){
   ...(fs.existsSync(path.join(localRuntime,'electron.exe'))?{electronDist:localRuntime}:{}),
   directories:{output},artifactName:'Magigraph-Studio-${version}-Windows-x64.${ext}',
   files:['index.html','style.css','app.js','AI-GUIDE.md','design.schema.json','designs/*.json',
-   'desktop/main.cjs','desktop/preload.cjs','desktop/overlay.html','desktop/overlay.css','desktop/overlay.js','desktop/smoke.cjs'],
+   'desktop/main.cjs','desktop/preload.cjs','desktop/overlay.html','desktop/overlay.css','desktop/overlay.js','desktop/controls.html','desktop/controls.css','desktop/controls.js','desktop/smoke.cjs'],
   extraFiles:[{from:'desktop/START-HERE.txt',to:'START-HERE.txt'},{from:'AI-GUIDE.md',to:'AI-GUIDE.md'},
    {from:'design.schema.json',to:'design.schema.json'},{from:'designs',to:'Designs',filter:['*.json']}],
   win:{target:['zip'],signAndEditExecutable:false},npmRebuild:false,publish:null
