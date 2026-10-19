@@ -31,3 +31,5 @@ kbd{font:11px Consolas,monospace;color:#d8c98e}
 @media(max-width:600px){.canvas-legend{grid-template-columns:1fr}.canvas-legend details[open]{grid-template-columns:1fr}}
 
 header>div:first-child{flex:0 0 auto}header h1{white-space:nowrap;font-size:clamp(22px,2vw,27px)}header .actions{flex:1}@media(max-width:600px){header h1{white-space:normal;word-break:keep-all}}
+
+#handleSettings{border-top:1px solid #364146;margin-top:16px;padding-top:2px}#selectedStrokeDetails{border-top:1px solid #364146;margin-top:20px}#alignmentNote{padding-left:10px;border-left:2px solid #b8a780}

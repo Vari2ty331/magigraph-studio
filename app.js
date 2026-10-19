@@ -139,12 +139,15 @@ function publishTrace(place=false){
  let svg=el('svg',{xmlns:NS,viewBox:'-55 -55 110 110'}),s=shape();
  if($('traceGuides').checked){let guide=$('gameGuideLines').cloneNode(true);guide.id='traceGuideLines';guide.removeAttribute('style');guide.setAttribute('stroke','#00e5ff');svg.append(guide);}
  if($('traceRing').checked)svg.append(el('circle',{r:50,fill:'none',stroke:'#00e5ff','stroke-width':100/diameter}));
- if(s&&doc.shapes.indexOf(s)<visible){
-  let group=Array.from($('art').children).find(e=>e.dataset.id===s.id);
-  if(group){let copy=group.cloneNode(true);if(copy.children.length>1)copy.lastChild.remove();svg.append(copy);}
-  if($('numbers').checked)drawShapeNumber(s,doc.shapes.indexOf(s),svg,{radius:8*100/diameter,font:10*100/diameter,line:100/diameter});
-  if(!$('preview').checked){let guides=el('g');drawSelectionHandles(s,guides,{radius:Number($('handleSize').value)*50/diameter,line:Number($('handleWidth').value)*100/diameter});svg.append(guides);}
+ const full=$('traceFull').checked,shown=full?doc.shapes:(s&&doc.shapes.indexOf(s)<visible?[s]:[]),occupied=[];
+ const ink=el('g',{'data-overlay-art':full?'full':'selected'});
+ for(const item of shown){
+  let group=el('g',{'data-id':item.id,transform:`translate(${item.x} ${item.y}) rotate(${item.rotation}) scale(${item.size})`}),path=geometry(item);
+  Object.entries({fill:isFilled(item)?'#243f9b':'none',stroke:isFilled(item)?'none':'#243f9b','stroke-width':width(item)/item.size,'stroke-linejoin':'round','stroke-linecap':'butt'}).forEach(([key,value])=>path.setAttribute(key,value));group.append(path);ink.append(group);
  }
+ svg.append(ink);
+ if($('numbers').checked)for(const item of shown)drawShapeNumber(item,doc.shapes.indexOf(item),svg,{radius:8*100/diameter,font:10*100/diameter,line:100/diameter},occupied);
+ if(s&&doc.shapes.indexOf(s)<visible&&!$('preview').checked){let guides=el('g');drawSelectionHandles(s,guides,{radius:Number($('handleSize').value)*50/diameter,line:Number($('handleWidth').value)*100/diameter});svg.append(guides);}
  // The display-only SVG needs no cursor styles; keep the overlay CSP strict.
  for(let node of svg.querySelectorAll('[style]'))node.removeAttribute('style');
  window.traceDesktop.update({x,y,diameter,opacity,place,image:'data:image/svg+xml,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))});
@@ -152,14 +155,15 @@ function publishTrace(place=false){
 function syncTraceSliders(){
  for(let axis of ['X','Y']){let value=Number($('trace'+axis).value),slider=$('trace'+axis+'Slider');if(!Number.isFinite(value))continue;slider.min=Math.max(-30000,Math.min(Number(slider.min),value));slider.max=Math.min(30000,Math.max(Number(slider.max),value));slider.value=value;}
 }
-function saveTracePreferences(){try{localStorage.setItem('magigraph-trace-v1',JSON.stringify(Object.fromEntries(['traceX','traceY','traceDiameter','traceOpacity'].map(key=>[key,Number($(key).value)]))));}catch{}}
+function saveTracePreferences(){try{localStorage.setItem('magigraph-trace-v1',JSON.stringify({...Object.fromEntries(['traceX','traceY','traceDiameter','traceOpacity'].map(key=>[key,Number($(key).value)])),traceFull:$('traceFull').checked}));}catch{}}
 function stepTraceSelection(delta){if(!doc.shapes.length)return;let i=doc.shapes.findIndex(s=>s.id===selected);i=i<0?(delta>0?0:doc.shapes.length-1):Math.max(0,Math.min(doc.shapes.length-1,i+delta));selected=doc.shapes[i].id;visible=Math.max(visible,i+1);$('preview').checked=false;setTool('select');sync();let button=$('layers').children[i]?.firstChild;button?.scrollIntoView({block:'nearest'});}
 if(window.traceDesktop){
  $('tracePanel').hidden=false;
- try{let prefs=JSON.parse(localStorage.getItem('magigraph-trace-v1')||'null');if(prefs)for(let id of ['traceX','traceY','traceDiameter','traceOpacity'])if(Number.isFinite(prefs[id]))$(id).value=prefs[id];}catch{}
+ try{let prefs=JSON.parse(localStorage.getItem('magigraph-trace-v1')||'null');if(prefs){for(let id of ['traceX','traceY','traceDiameter','traceOpacity'])if(Number.isFinite(prefs[id]))$(id).value=prefs[id];$('traceFull').checked=prefs.traceFull===true;}}catch{}
  for(let id of ['traceX','traceY','traceDiameter','traceOpacity','traceRing','traceGuides'])$(id).oninput=()=>{publishTrace(['traceX','traceY','traceDiameter'].includes(id));saveTracePreferences();};
  for(let axis of ['X','Y'])$('trace'+axis+'Slider').oninput=()=>{$('trace'+axis).value=$('trace'+axis+'Slider').value;publishTrace(true);saveTracePreferences();};
  window.traceDesktop.onBounds(bounds=>{for(let axis of ['X','Y']){let limits=bounds[axis.toLowerCase()];$('trace'+axis+'Slider').min=limits.min;$('trace'+axis+'Slider').max=limits.max;}syncTraceSliders();});
+ $('traceFull').onchange=()=>{publishTrace();saveTracePreferences();if($('traceFull').checked)window.traceDesktop.restore();};
  $('desktopShortcuts').hidden=false;
  $('traceAlign').onchange=()=>window.traceDesktop.align($('traceAlign').checked);
  window.traceDesktop.onAlignment(value=>{$('traceAlign').checked=value;$('traceMode').textContent=value?'위치 맞추기 · 오버레이를 드래그하세요. 끝나면 고정하세요.':'고정됨 · 마우스 입력은 게임으로 전달됩니다.';});
@@ -173,3 +177,6 @@ if(window.traceDesktop){
 
 $('tracePrev').onclick=()=>window.traceDesktop?window.traceDesktop.step(-1):stepTraceSelection(-1);
 $('traceNext').onclick=()=>window.traceDesktop?window.traceDesktop.step(1):stepTraceSelection(1);
+
+// Preserve marker-size controls in the browser edition without showing desktop-only controls.
+if(!window.traceDesktop)$('tracePanel').before($('handleSettings'));
