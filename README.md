@@ -4,7 +4,7 @@
 
 ## Windows 사용자
 
-GitHub Releases의 Windows ZIP을 내려받아 **로컬 디스크에 전체 압축을 풀고** `Magigraph Studio.exe`를 실행하세요. Node.js나 Python 설치는 필요하지 않습니다. 실행 파일과 지원 폴더를 함께 유지하세요. 자동 업데이트는 없으며 새 버전은 ZIP을 다시 내려받아 사용합니다.
+[GitHub Releases](https://github.com/Vari2ty331/magigraph-studio/releases/latest)의 Windows ZIP을 내려받아 **로컬 디스크에 전체 압축을 풀고** `Magigraph Studio.exe`를 실행하세요. Node.js나 Python 설치는 필요하지 않습니다. 실행 파일과 지원 폴더를 함께 유지하세요. 자동 업데이트는 없으며 새 버전은 ZIP을 다시 내려받아 사용합니다.
 
 오버레이는 사용자가 직접 그리기 위한 시각 안내입니다. 게임 접속, 화면 캡처, 게임 입력 자동화는 하지 않습니다. 상세 사용법은 `desktop/START-HERE.txt`에 있습니다.
 
