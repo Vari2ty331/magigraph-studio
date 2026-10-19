@@ -54,7 +54,8 @@ app.whenReady().then(()=>{
  const readableResources=new Set(['AI-GUIDE.md',...['round-character','striped-character','footballer-seven'].map(name=>`designs/${name}.json`)]);
  ipcMain.handle('read-resource',async(e,name)=>{
   if(e.sender!==editor.webContents||!readableResources.has(name))throw Error('허용되지 않은 자료입니다.');
-  return fs.readFile(path.join(__dirname,'..',name),'utf8');
+  const root=app.isPackaged&&name==='AI-GUIDE.md'?path.dirname(app.getPath('exe')):path.join(__dirname,'..');
+  return fs.readFile(path.join(root,name),'utf8');
  });
  ipcMain.handle('copy-text',(e,text)=>{
   if(e.sender!==editor.webContents||typeof text!=='string'||text.length>2000000)throw Error('복사할 안내문이 올바르지 않습니다.');

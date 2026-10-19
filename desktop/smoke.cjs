@@ -9,10 +9,11 @@ app.whenReady().then(async()=>{try{
  await Promise.all(wins.map(w=>new Promise(resolve=>{const done=()=>{resolve();};w.webContents.once('did-finish-load',done);if(w.webContents.getURL().endsWith('.html')&&!w.webContents.isLoading())resolve();}))); 
 
  const editor=wins.find(w=>w.webContents.getURL().endsWith('/index.html')),overlay=wins.find(w=>w.webContents.getURL().endsWith('/overlay.html'));
+ if(!editor.isVisible())editor.show();
  const startupMessage=await editor.webContents.executeJavaScript(`document.getElementById('message').textContent`);
  const previousClipboard=await clipboard.readText();
  try{
-  const guide=fs.readFileSync(path.join(__dirname,'..','AI-GUIDE.md'),'utf8');
+  const guide=fs.readFileSync(path.join(app.isPackaged?path.dirname(app.getPath('exe')):path.join(__dirname,'..'),'AI-GUIDE.md'),'utf8');
   // Exercise the real button with fetch unavailable, as in a packaged file:// renderer.
   const prompt=await editor.webContents.executeJavaScript(`(async()=>{
    const savedFetch=window.fetch;window.fetch=()=>Promise.reject(Error('Failed to fetch'));
