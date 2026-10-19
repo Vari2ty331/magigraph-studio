@@ -12,6 +12,13 @@ function reveal(){
  if(lastImage)overlay.webContents.send('trace-image',lastImage);
  overlay.webContents.invalidate();editor.webContents.send('trace-status',true);
 }
+function stepStroke(delta){editor.webContents.send('trace-step',delta);reveal();}
+function sendScreenBounds(){
+ if(!editor||editor.isDestroyed())return;
+ const displays=screen.getAllDisplays().map(d=>d.bounds);
+ const limits=(axis,length)=>({min:Math.max(-30000,Math.min(...displays.map(d=>d[axis]))),max:Math.min(30000,Math.max(...displays.map(d=>d[axis]+d[length])))});
+ editor.webContents.send('trace-bounds',{x:limits('x','width'),y:limits('y','height')});
+}
 function setAlignment(value){
  clearTimeout(modeTimer);placementDrag=null;aligning=value;
  // Keep WS_EX_NOACTIVATE in both modes. Activating the overlay can disturb games.
@@ -41,6 +48,9 @@ app.whenReady().then(()=>{
  const designArg=process.argv.find(arg=>/^--design=(round-character|striped-character|footballer-seven)$/.test(arg));
  editor.loadFile(path.join(__dirname,'..','index.html'),designArg?{query:{design:designArg.split('=')[1]}}:{});
  editor.on('closed',()=>app.quit());
+ editor.webContents.on('did-finish-load',sendScreenBounds);
+ for(const event of ['display-added','display-removed','display-metrics-changed'])screen.on(event,sendScreenBounds);
+ ipcMain.on('trace-step-request',(e,delta)=>{if(e.sender===editor.webContents&&(delta===1||delta===-1))stepStroke(delta);});
  ipcMain.on('trace-update',(e,data)=>{
   if(e.sender!==editor.webContents||!data||typeof data.image!=='string'||!data.image.startsWith('data:image/svg+xml,')||data.image.length>2000000)return;
   if(![data.x,data.y,data.diameter,data.opacity].every(Number.isFinite)||data.diameter<100||data.diameter>3000||Math.abs(data.x)>30000||Math.abs(data.y)>30000||data.opacity<.1||data.opacity>1)return;
@@ -58,9 +68,10 @@ app.whenReady().then(()=>{
   if(phase==='start'){placementDrag={cursor:screen.getCursorScreenPoint(),bounds:overlay.getBounds()};return;}
   if(phase==='move'&&placementDrag){let cursor=screen.getCursorScreenPoint(),start=placementDrag;overlay.setPosition(start.bounds.x+cursor.x-start.cursor.x,start.bounds.y+cursor.y-start.cursor.y);}
  });
- globalShortcut.register('CommandOrControl+Shift+M',()=>setAlignment(!aligning));
- if(!globalShortcut.register('CommandOrControl+Shift+Space',toggle))editor.webContents.once('did-finish-load',()=>editor.webContents.send('trace-error','표시 단축키를 등록하지 못했습니다. 표시 버튼을 사용하세요.'));
- for(const [key,delta]of [['Right',1],['Left',-1]])globalShortcut.register('CommandOrControl+Shift+'+key,()=>editor.webContents.send('trace-step',delta));
+ const shortcuts=[['CommandOrControl+Shift+M',()=>setAlignment(!aligning)],['CommandOrControl+Shift+Space',toggle],['CommandOrControl+Shift+Right',()=>stepStroke(1)],['CommandOrControl+Shift+Left',()=>stepStroke(-1)]];
+ const unavailable=shortcuts.filter(([key,action])=>!globalShortcut.register(key,action)).map(([key])=>key);
+ if(unavailable.length)editor.webContents.once('did-finish-load',()=>editor.webContents.send('trace-error',`다른 프로그램에서 사용 중인 단축키: ${unavailable.join(', ')}. 오버레이 패널의 버튼을 사용하세요.`));
+
 });
 app.on('will-quit',()=>globalShortcut.unregisterAll());
 app.on('window-all-closed',()=>app.quit());

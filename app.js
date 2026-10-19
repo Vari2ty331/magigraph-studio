@@ -45,8 +45,28 @@ function drawTransformHandles(s,h){
  let p={x:(f.corners[2].x+f.corners[3].x)/2,y:(f.corners[2].y+f.corners[3].y)/2};
  let handle=el('circle',{cx:p.x,cy:p.y,r:1.1,fill:'#fff3bd',stroke:'#88682a','stroke-width':.3,'data-transform':'transform',style:'cursor:grab'}),title=el('title');title.textContent='드래그: 크기·회전 동시 조절 · Shift: 15° 단위';handle.append(title);h.append(handle);
 }
+function drawSelectionHandles(s,h,metrics){
+ drawTransformHandles(s,h);
+ if(['line','quadratic','cubic'].includes(s.type)){
+  let ps=controls(s).map(p=>world(s,p));
+  if(s.type!=='line'){
+   let pairs=s.type==='cubic'?[[ps[0],ps[1]],[ps[3],ps[2]]]:[[ps[0],ps[1]],[ps[2],ps[1]]];
+   pairs.forEach(pair=>h.append(el('polyline',{points:pair.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:'#ffe52e','stroke-width':metrics.line,'pointer-events':'none'})));
+  }
+  ps.forEach((p,i)=>{
+   let endpoint=i===0||i===ps.length-1,r=metrics.radius,half=r/Math.SQRT2;
+   let attributes={fill:'#ffe52e',stroke:'#66502a','stroke-width':metrics.line/2,'data-handle':i,'data-marker':endpoint?'endpoint':'control',style:'cursor:crosshair'};
+   let marker=endpoint?el('circle',{...attributes,cx:p.x,cy:p.y,r}):el('rect',{...attributes,x:p.x-half,y:p.y-half,width:half*2,height:half*2,transform:`rotate(45 ${p.x} ${p.y})`});
+   let title=el('title');title.textContent=endpoint?'끝점 · 드래그하여 위치 조절':'곡률 조절점 · 드래그하여 곡선 모양 조절';marker.append(title);h.append(marker);
+  });
+ }else{
+  let ring=geometry(s);Object.entries({transform:`translate(${s.x} ${s.y}) rotate(${s.rotation}) scale(${s.size})`,fill:'none',stroke:'#b28840','stroke-width':.3/s.size,'stroke-dasharray':`${1/s.size} ${1/s.size}`,'pointer-events':'none'}).forEach(([k,v])=>ring.setAttribute(k,v));h.append(ring);
+ }
+ // Paint the red midpoint last so a shared quadratic control cannot conceal it.
+ let center=moveHandle(s),marker=el('circle',{cx:center.x,cy:center.y,r:metrics.radius,fill:'#df2828',stroke:'#573d25','stroke-width':metrics.line/2,'data-transform':'move','data-marker':'move',style:'cursor:move'}),title=el('title');title.textContent='이동점 · 도형 전체 이동 (겹친 조절점: Alt+드래그)';marker.append(title);h.append(marker);
+}
 function draw(){let art=$('art'),h=$('handles');art.replaceChildren();h.replaceChildren();let clean=$('preview').checked;$('gridDisc').style.display=$('grid').checked&&!clean?'':'none';$('gameGuideLines').style.display=$('gameGuide').checked?'':'none';$('refImage').style.display=clean?'none':'';doc.shapes.slice(0,visible).forEach((s,i)=>{let g=el('g',{'data-id':s.id,class:'shape',transform:`translate(${s.x} ${s.y}) rotate(${s.rotation}) scale(${s.size})`}),e=geometry(s);e.setAttribute('fill',isFilled(s)?'#243f9b':'none');e.setAttribute('stroke',isFilled(s)?'none':'#243f9b');e.setAttribute('stroke-width',width(s)/s.size);e.setAttribute('stroke-linejoin','round');e.setAttribute('stroke-linecap','butt');g.append(e);let hit=geometry(s);hit.setAttribute('fill',isFilled(s)?'transparent':'none');hit.setAttribute('stroke','transparent');hit.setAttribute('stroke-width',Math.max(width(s),2)/s.size);g.append(hit);art.append(g);if($('numbers').checked&&!clean){let text=el('text',{x:s.x,y:s.y,'font-size':2.6,fill:'#ad4e22','pointer-events':'none'});text.textContent=i+1;art.append(text);}});
-let s=shape();if(s&&!clean&&doc.shapes.indexOf(s)<visible){drawTransformHandles(s,h);let center=moveHandle(s),metrics=handleMetrics();let ctr=el('circle',{cx:center.x,cy:center.y,r:metrics.radius,fill:'#df2828',stroke:'#573d25','stroke-width':metrics.line/2,'data-transform':'move',style:'cursor:move'});h.append(ctr);if(['line','quadratic','cubic'].includes(s.type)){let ps=controls(s).map(p=>world(s,p));if(s.type!=='line'){let pairs=s.type==='cubic'?[[ps[0],ps[1]],[ps[3],ps[2]]]:[[ps[0],ps[1]],[ps[2],ps[1]]];pairs.forEach(pair=>h.append(el('polyline',{points:pair.map(p=>`${p.x},${p.y}`).join(' '),fill:'none',stroke:'#ffe52e','stroke-width':metrics.line,'pointer-events':'none'})));}h.append(ctr);ps.forEach((p,i)=>h.append(el('circle',{cx:p.x,cy:p.y,r:metrics.radius,fill:'#ffe52e',stroke:'#66502a','stroke-width':metrics.line/2,'data-handle':i,style:'cursor:crosshair'})));}else{let ring=geometry(s);ring.setAttribute('transform',`translate(${s.x} ${s.y}) rotate(${s.rotation}) scale(${s.size})`);ring.setAttribute('fill','none');ring.setAttribute('stroke','#b28840');ring.setAttribute('stroke-width',.3/s.size);ring.setAttribute('stroke-dasharray',`${1/s.size} ${1/s.size}`);ring.setAttribute('pointer-events','none');h.append(ring);}}
+let s=shape();if(s&&!clean&&doc.shapes.indexOf(s)<visible)drawSelectionHandles(s,h,handleMetrics());
 $('count').textContent=`배치된 도형 ${doc.shapes.length} / 60`;$('remaining').textContent=`${60-doc.shapes.length}개 남음`;$('step').max=doc.shapes.length;$('step').value=visible;$('stepText').textContent=`${visible} / ${doc.shapes.length}`;$('undo').disabled=!history.length;$('redo').disabled=!future.length;publishTrace();}
 function sync(){$('stroke').value=doc.settings.stroke;$('ratio').value=doc.settings.outlineRatio;draw();inspector();layers();persist();}
 function update(s,changes){let candidate={...s,...changes};if(!contained(candidate)){notify('도형의 선이나 면이 원 밖으로 벗어나 변경할 수 없습니다.');return false;}snapshot();Object.assign(s,changes);notify('');sync();return true;}
@@ -56,7 +76,7 @@ function remove(id=selected){let index=doc.shapes.findIndex(s=>s.id===id);if(ind
 function setTool(t){tool=t;document.querySelectorAll('#tools button').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));$('status').textContent=t==='select'?'중심점: 이동 · 기본 도형 노란 점: 크기·회전 · 직선 양 끝점: 길이·방향 · 곡선 조절점: 모양 변경':`${NAMES[t]} 그리기 · 원 안에서 드래그하세요`;}
 ['select',...TYPES].forEach((t,i)=>{let b=document.createElement('button');b.textContent=i?LABELS[i-1]:'↖ 선택·이동';b.dataset.tool=t;b.onclick=()=>setTool(t);$('tools').append(b);});
 function pointer(e){let p=$('canvas').createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform($('canvas').getScreenCTM().inverse());}
-$('canvas').onpointerdown=e=>{if(e.button!==0||$('preview').checked)return;let p=pointer(e),target=e.target.closest('[data-id]'),handle=e.target.getAttribute('data-handle'),transform=e.target.getAttribute('data-transform');if(transform&&shape()){setTool('select');$('canvas').setPointerCapture(e.pointerId);drag={kind:transform,start:p,original:clone(shape()),before:clone(doc)};return;}if(handle===null&&Math.hypot(p.x,p.y)>50)return;$('canvas').setPointerCapture(e.pointerId);if(handle!==null&&shape()){setTool('select');drag={kind:'handle',index:+handle,start:p,original:clone(shape()),before:clone(doc)};return;}if(tool==='select'){selected=target?.dataset.id||null;let s=shape();if(s)drag={kind:'move',start:p,original:clone(s),before:clone(doc)};sync();return;}if(doc.shapes.length>=60)return notify('도형은 최대 60개까지 배치할 수 있습니다.');let s={id:crypto.randomUUID(),type:tool,x:p.x,y:p.y,size:.1,rotation:0};if(tool==='quadratic')s.points=[{x:-.5,y:0},{x:0,y:.5},{x:.5,y:0}];if(tool==='cubic')s.points=[{x:-.5,y:0},{x:-.2,y:.5},{x:.2,y:-.5},{x:.5,y:0}];if(!contained(s))return;drag={kind:'create',start:p,before:clone(doc),original:clone(s)};doc.shapes.push(s);selected=s.id;visible=doc.shapes.length;sync();};
+$('canvas').onpointerdown=e=>{if(e.button!==0||$('preview').checked)return;let p=pointer(e),target=e.target.closest('[data-id]'),handle=e.target.getAttribute('data-handle'),transform=e.target.getAttribute('data-transform');if(transform==='move'&&e.altKey&&shape()?.points){let ps=controls(shape()).map(q=>world(shape(),q)),radius=handleMetrics().radius;let index=ps.findIndex((q,i)=>i>0&&i<ps.length-1&&Math.hypot(q.x-p.x,q.y-p.y)<=radius*2);if(index>=0){handle=String(index);transform=null;}}if(transform&&shape()){setTool('select');$('canvas').setPointerCapture(e.pointerId);drag={kind:transform,start:p,original:clone(shape()),before:clone(doc)};return;}if(handle===null&&Math.hypot(p.x,p.y)>50)return;$('canvas').setPointerCapture(e.pointerId);if(handle!==null&&shape()){setTool('select');drag={kind:'handle',index:+handle,start:p,original:clone(shape()),before:clone(doc)};return;}if(tool==='select'){selected=target?.dataset.id||null;let s=shape();if(s)drag={kind:'move',start:p,original:clone(s),before:clone(doc)};sync();return;}if(doc.shapes.length>=60)return notify('도형은 최대 60개까지 배치할 수 있습니다.');let s={id:crypto.randomUUID(),type:tool,x:p.x,y:p.y,size:.1,rotation:0};if(tool==='quadratic')s.points=[{x:-.5,y:0},{x:0,y:.5},{x:.5,y:0}];if(tool==='cubic')s.points=[{x:-.5,y:0},{x:-.2,y:.5},{x:.2,y:-.5},{x:.5,y:0}];if(!contained(s))return;drag={kind:'create',start:p,before:clone(doc),original:clone(s)};doc.shapes.push(s);selected=s.id;visible=doc.shapes.length;sync();};
 $('canvas').onpointermove=e=>{if(!drag)return;let p=pointer(e),s=shape();if(!s)return;let candidate=clone(drag.original);if(drag.kind==='transform'){candidate=transformFromPointer(drag.original,drag.kind,drag.start,p,e.shiftKey);}else if(drag.kind==='move'){candidate.x+=p.x-drag.start.x;candidate.y+=p.y-drag.start.y;}else if(drag.kind==='handle'){if(s.type==='line'){let ps=controls(drag.original).map(q=>world(drag.original,q));ps[drag.index]=p;candidate.x=(ps[0].x+ps[1].x)/2;candidate.y=(ps[0].y+ps[1].y)/2;candidate.size=Math.max(.1,Math.hypot(ps[1].x-ps[0].x,ps[1].y-ps[0].y));candidate.rotation=Math.atan2(ps[1].y-ps[0].y,ps[1].x-ps[0].x)*180/Math.PI;}else candidate.points[drag.index]=local(drag.original,p);}else{let dx=p.x-drag.start.x,dy=p.y-drag.start.y;candidate.x=(p.x+drag.start.x)/2;candidate.y=(p.y+drag.start.y)/2;candidate.size=Math.max(.1,Math.hypot(dx,dy));candidate.rotation=Math.atan2(dy,dx)*180/Math.PI;}if(contained(candidate)){Object.assign(s,candidate);notify('');draw();inspector();}else notify('원 경계에 도달했습니다. 선과 면이 모두 원 안에 있어야 합니다.');};
 function finish(){if(!drag)return;let before=drag.before;drag=null;if(JSON.stringify(before)!==JSON.stringify(doc)){history.push(before);if(history.length>100)history.shift();future=[];}sync();}
 $('canvas').onpointerup=finish;$('canvas').onpointercancel=()=>{if(drag){doc=drag.before;drag=null;selected=null;visible=doc.shapes.length;sync();}};
@@ -94,6 +114,7 @@ new ResizeObserver(()=>draw()).observe($('canvas'));
 
 function publishTrace(place=false){
  if(!window.traceDesktop)return;
+ syncTraceSliders();let index=doc.shapes.findIndex(s=>s.id===selected);$('traceSelection').textContent=index<0?'선택한 획 없음':`${index+1} / ${doc.shapes.length} · ${NAMES[doc.shapes[index].type]}`;$('tracePrev').disabled=!doc.shapes.length||index===0;$('traceNext').disabled=!doc.shapes.length||index===doc.shapes.length-1;
  let diameter=Number($('traceDiameter').value),x=Number($('traceX').value),y=Number($('traceY').value),opacity=Number($('traceOpacity').value);
  if(![diameter,x,y,opacity].every(Number.isFinite)||diameter<100||diameter>3000)return;
  let svg=el('svg',{xmlns:NS,viewBox:'-55 -55 110 110'}),s=shape();
@@ -102,25 +123,30 @@ function publishTrace(place=false){
  if(s&&doc.shapes.indexOf(s)<visible){
   let group=Array.from($('art').children).find(e=>e.dataset.id===s.id);
   if(group){let copy=group.cloneNode(true);if(copy.children.length>1)copy.lastChild.remove();svg.append(copy);}
-  if(!$('preview').checked){let copy=$('handles').cloneNode(true);copy.removeAttribute('id');
-   // Preserve the requested screen-pixel marker dimensions in the other window.
-   for(let e of copy.querySelectorAll('circle')){e.setAttribute('r',Number($('handleSize').value)*50/diameter);e.setAttribute('stroke-width',Number($('handleWidth').value)*50/diameter);}
-   for(let e of copy.querySelectorAll('polyline'))e.setAttribute('stroke-width',Number($('handleWidth').value)*100/diameter);
-   svg.append(copy);
-  }
+  if(!$('preview').checked){let guides=el('g');drawSelectionHandles(s,guides,{radius:Number($('handleSize').value)*50/diameter,line:Number($('handleWidth').value)*100/diameter});svg.append(guides);}
  }
+ // The display-only SVG needs no cursor styles; keep the overlay CSP strict.
+ for(let node of svg.querySelectorAll('[style]'))node.removeAttribute('style');
  window.traceDesktop.update({x,y,diameter,opacity,place,image:'data:image/svg+xml,'+encodeURIComponent(new XMLSerializer().serializeToString(svg))});
 }
+function syncTraceSliders(){
+ for(let axis of ['X','Y']){let value=Number($('trace'+axis).value),slider=$('trace'+axis+'Slider');if(!Number.isFinite(value))continue;slider.min=Math.max(-30000,Math.min(Number(slider.min),value));slider.max=Math.min(30000,Math.max(Number(slider.max),value));slider.value=value;}
+}
+function saveTracePreferences(){try{localStorage.setItem('magigraph-trace-v1',JSON.stringify(Object.fromEntries(['traceX','traceY','traceDiameter','traceOpacity'].map(key=>[key,Number($(key).value)]))));}catch{}}
+function stepTraceSelection(delta){if(!doc.shapes.length)return;let i=doc.shapes.findIndex(s=>s.id===selected);i=i<0?(delta>0?0:doc.shapes.length-1):Math.max(0,Math.min(doc.shapes.length-1,i+delta));selected=doc.shapes[i].id;visible=Math.max(visible,i+1);$('preview').checked=false;setTool('select');sync();let button=$('layers').children[i]?.firstChild;button?.scrollIntoView({block:'nearest'});}
 if(window.traceDesktop){
  $('tracePanel').hidden=false;
  try{let prefs=JSON.parse(localStorage.getItem('magigraph-trace-v1')||'null');if(prefs)for(let id of ['traceX','traceY','traceDiameter','traceOpacity'])if(Number.isFinite(prefs[id]))$(id).value=prefs[id];}catch{}
- for(let id of ['traceX','traceY','traceDiameter','traceOpacity','traceRing','traceGuides'])$(id).oninput=()=>{publishTrace(['traceX','traceY','traceDiameter'].includes(id));try{localStorage.setItem('magigraph-trace-v1',JSON.stringify(Object.fromEntries(['traceX','traceY','traceDiameter','traceOpacity'].map(key=>[key,Number($(key).value)]))));}catch{}};
+ for(let id of ['traceX','traceY','traceDiameter','traceOpacity','traceRing','traceGuides'])$(id).oninput=()=>{publishTrace(['traceX','traceY','traceDiameter'].includes(id));saveTracePreferences();};
+ for(let axis of ['X','Y'])$('trace'+axis+'Slider').oninput=()=>{$('trace'+axis).value=$('trace'+axis+'Slider').value;publishTrace(true);saveTracePreferences();};
+ window.traceDesktop.onBounds(bounds=>{for(let axis of ['X','Y']){let limits=bounds[axis.toLowerCase()];$('trace'+axis+'Slider').min=limits.min;$('trace'+axis+'Slider').max=limits.max;}syncTraceSliders();});
+ $('tracePrev').onclick=()=>window.traceDesktop.step(-1);$('traceNext').onclick=()=>window.traceDesktop.step(1);
  $('traceAlign').onchange=()=>window.traceDesktop.align($('traceAlign').checked);
  window.traceDesktop.onAlignment(value=>{$('traceAlign').checked=value;$('traceMode').textContent=value?'위치 맞추기 · 오버레이를 드래그하세요. 끝나면 고정하세요.':'고정됨 · 마우스 입력은 게임으로 전달됩니다.';});
- window.traceDesktop.onPosition(({x,y})=>{$('traceX').value=x;$('traceY').value=y;try{localStorage.setItem('magigraph-trace-v1',JSON.stringify(Object.fromEntries(['traceX','traceY','traceDiameter','traceOpacity'].map(key=>[key,Number($(key).value)]))));}catch{}});
+ window.traceDesktop.onPosition(({x,y})=>{$('traceX').value=x;$('traceY').value=y;syncTraceSliders();saveTracePreferences();});
  $('traceRestore').onclick=()=>{publishTrace();window.traceDesktop.restore();};
  $('traceToggle').onclick=()=>{$('preview').checked=false;draw();window.traceDesktop.toggle();};
  window.traceDesktop.onStatus(shown=>{$('traceToggle').textContent=shown?'오버레이 숨기기':'오버레이 표시';});
- window.traceDesktop.onStep(delta=>{if(!doc.shapes.length)return;let i=doc.shapes.findIndex(s=>s.id===selected);i=i<0?(delta>0?0:doc.shapes.length-1):Math.max(0,Math.min(doc.shapes.length-1,i+delta));selected=doc.shapes[i].id;visible=Math.max(visible,i+1);$('preview').checked=false;setTool('select');sync();});
+ window.traceDesktop.onStep(stepTraceSelection);
  window.traceDesktop.onError(notify);publishTrace(true);
 }

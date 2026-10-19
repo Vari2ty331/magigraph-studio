@@ -84,3 +84,11 @@ The 등번호 7 선수 도안 preset recreates the supplied back-facing football
 The release ZIP contains Magigraph Studio.exe and its supporting files. Extract the entire ZIP to a local folder, then double-click Magigraph Studio.exe. No installation or development tools are required. Keep the supporting folders beside the executable. START-HERE.txt includes launch/overlay instructions; AI-GUIDE.md, the schema and editable design JSONs are also available outside the packaged app. Autosaves remain in the existing Magigraph Studio AppData profile.
 
 Developers can run `npm.cmd run build:zip` to create the ZIP in dist/. Builds are staged locally to avoid running Chromium or packaging tools from the NAS. The executable accepts `--self-test` for isolated packaged checks without changing saved drawings.
+
+## Pre-release tracing refinements
+
+The sidebar uses aligned input rows rather than floating fields. X/Y each offer a slider for coarse positioning and a numeric field with one-pixel spinner increments; slider bounds follow connected displays, including negative monitor coordinates, and expand to retain manually entered positions. Window dragging, fields and sliders stay synchronized.
+
+Ctrl+Shift+Left/Right reveals the previous/next selected stroke without focusing the editor, including when the overlay was hidden. The panel also provides previous/next buttons and a stroke counter. Shortcut registration conflicts are reported instead of silently ignored.
+
+Yellow circles mark endpoints; yellow diamonds mark curve controls. Both retain the game's yellow palette, with a red translation circle painted above the guides and other markers, including quadratic curves. Alt-drag can access a curve control that overlaps the red marker. Editor and transparent overlay share the same marker renderer so shape and screen-pixel sizes match.

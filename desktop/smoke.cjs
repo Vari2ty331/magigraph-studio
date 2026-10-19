@@ -1,4 +1,4 @@
-const {app,BrowserWindow}=require('electron');
+const {app,BrowserWindow,globalShortcut}=require('electron');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -9,6 +9,7 @@ app.whenReady().then(async()=>{try{
  await Promise.all(wins.map(w=>new Promise(resolve=>{const done=()=>{resolve();};w.webContents.once('did-finish-load',done);if(w.webContents.getURL().endsWith('.html')&&!w.webContents.isLoading())resolve();}))); 
 
  const editor=wins.find(w=>w.webContents.getURL().endsWith('/index.html')),overlay=wins.find(w=>w.webContents.getURL().endsWith('/overlay.html'));
+ const startupMessage=await editor.webContents.executeJavaScript(`document.getElementById('message').textContent`);
  const result=await editor.webContents.executeJavaScript(`(()=>{
  window.magigraph.setDesign({version:1,settings:{stroke:1.25,outlineRatio:.02},shapes:[{id:'smoke-curve',type:'cubic',x:0,y:0,size:1,rotation:0,points:[{x:-30,y:-15},{x:-25,y:25},{x:25,y:-25},{x:30,y:15}]}]});
  document.querySelector('#layers button').click();
@@ -17,6 +18,11 @@ app.whenReady().then(async()=>{try{
  document.getElementById('traceToggle').click();
  return {lines:document.querySelectorAll('#handles polyline').length,points:document.querySelectorAll('#handles [data-handle]').length,center:[document.querySelector('#handles [data-transform="move"]').getAttribute('cx'),document.querySelector('#handles [data-transform="move"]').getAttribute('cy')],panel:!document.getElementById('tracePanel').hidden};})()`);
 
+ const markerKinds=await editor.webContents.executeJavaScript(`({endpoints:document.querySelectorAll('#handles circle[data-marker="endpoint"]').length,controls:document.querySelectorAll('#handles rect[data-marker="control"]').length,redLast:document.getElementById('handles').lastElementChild.dataset.marker})`);
+ assert.deepEqual(markerKinds,{endpoints:2,controls:2,redLast:'move'});
+ const layout=await editor.webContents.executeJavaScript(`(()=>{const sidebar=document.querySelector('main>aside'),edge=sidebar.getBoundingClientRect().right;return {fields:Array.from(sidebar.querySelectorAll('label:has(>input[type=number])')).every(label=>{let input=label.querySelector('input'),r=input.getBoundingClientRect(),text=document.createRange();text.selectNodeContents(label.firstChild);return text.getBoundingClientRect().right<=r.left+.5&&r.right<=edge;}),sliders:['X','Y'].every(axis=>document.getElementById('trace'+axis+'Slider').getBoundingClientRect().width>100)};})()`);
+ assert.ok(layout.fields,'Sidebar number fields must not overlap labels or escape the sidebar');assert.ok(layout.sliders);
+ for(const key of ['CommandOrControl+Shift+Right','CommandOrControl+Shift+Left'])if(!globalShortcut.isRegistered(key)){assert.ok(startupMessage.includes(key),'Shortcut conflicts must be reported');console.log('Shortcut already owned by another running app:',key);}
  assert.equal(result.lines,2);assert.equal(result.points,4);assert.deepEqual(result.center,['0','0']);assert.equal(result.panel,true);
  // Wait for the image decode in the receiving renderer before capturing it.
  await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');if(img.src&&img.complete)resolve();else img.onload=resolve;})`);
@@ -54,8 +60,38 @@ app.whenReady().then(async()=>{try{
  await editor.webContents.executeJavaScript(`document.getElementById('traceGuides').click();`);
  const noGuides=await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{if(!decodeURIComponent(img.src).includes('traceGuideLines'))resolve(true);};new MutationObserver(check).observe(img,{attributes:true});check();})`);
  assert.equal(noGuides,true);
+ // Sliders, numeric fine tuning and window dragging must share one position.
+ const movedBySlider=editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onPosition(p=>{if(p.x===250&&p.y===190)resolve();});let slider=document.getElementById('traceXSlider');slider.value=250;slider.dispatchEvent(new Event('input'));})`);
+ await movedBySlider;assert.equal(overlay.getBounds().x,250);
+ const movedByNumber=editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onPosition(p=>{if(p.x===250&&p.y===191)resolve();});let field=document.getElementById('traceY');field.stepUp();field.dispatchEvent(new Event('input'));})`);
+ await movedByNumber;assert.equal(overlay.getBounds().y,191);
+ assert.deepEqual(await editor.webContents.executeJavaScript(`['traceXSlider','traceYSlider'].map(id=>Number(document.getElementById(id).value))`),[250,191]);
+ await editor.webContents.executeJavaScript(`(()=>{let field=document.getElementById('traceX');field.value=-120;field.dispatchEvent(new Event('input'));})()`);
+ assert.equal(await editor.webContents.executeJavaScript(`Number(document.getElementById('traceXSlider').value)`),-120);
+ // Quadratic control exactly on the chord midpoint formerly covered the red dot.
+ const quadratic=await editor.webContents.executeJavaScript(`(()=>{
+ const q={id:'q',type:'quadratic',x:0,y:0,size:1,rotation:0,points:[{x:-20,y:0},{x:0,y:0},{x:20,y:0}]};
+ window.magigraph.setDesign({version:1,settings:{stroke:1.25,outlineRatio:.02},shapes:[q,{...q,id:'next',y:12}]});document.querySelector('#layers button').click();
+ const root=document.getElementById('handles'),red=root.lastElementChild;
+ return {count:root.querySelectorAll('[data-handle]').length,control:root.querySelector('[data-marker="control"]').tagName,last:red.dataset.marker,center:[red.getAttribute('cx'),red.getAttribute('cy')]};})()`);
+ assert.deepEqual(quadratic,{count:3,control:'rect',last:'move',center:['0','0']});
+ await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{let src=decodeURIComponent(img.src);if(src.includes('data-id="q"')&&src.includes('data-marker="control"'))resolve();};new MutationObserver(check).observe(img,{attributes:true});check();})`);
+ const overlayMarkers=await overlay.webContents.executeJavaScript(`(()=>{const xml=new DOMParser().parseFromString(decodeURIComponent(document.getElementById('trace').src).split(',').slice(1).join(','),'image/svg+xml');const group=xml.documentElement.lastElementChild;return{red:group.lastElementChild.getAttribute('data-marker'),control:group.querySelector('[data-marker="control"]').tagName};})()`);
+ assert.deepEqual(overlayMarkers,{red:'move',control:'rect'});
+ // Use the same IPC dispatch as the global shortcut, while the overlay is hidden.
+ const hideForStep=new Promise(resolve=>overlay.once('hide',resolve));await editor.webContents.executeJavaScript(`document.getElementById('traceToggle').click()`);await hideForStep;
+ const shownByStep=new Promise(resolve=>overlay.once('show',resolve));
+ await editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onStep(delta=>{if(delta===1)resolve();});window.traceDesktop.step(1);})`);await shownByStep;
+ assert.equal(overlay.isVisible(),true);assert.equal(overlay.isFocused(),false);
+ assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('traceSelection').textContent`),'2 / 2 · 곡선');
+ await editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onStep(delta=>{if(delta===-1)resolve();});document.getElementById('tracePrev').click();})`);
+ assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('traceSelection').textContent`),'1 / 2 · 곡선');
+ assert.deepEqual(await editor.webContents.executeJavaScript(`['tracePrev','traceNext'].map(id=>document.getElementById(id).disabled)`),[true,false]);
+ console.log('Sidebar layout, slider/fine-step sync, negative coordinates, marker roles, quadratic red marker and stroke navigation passed.');
  console.log('Desktop smoke passed: rendering, non-activating alignment, mouse pin click, delayed click-through redraw, visibility recovery, position persistence and guides.');
  await editor.webContents.executeJavaScript(`loadCharacterPreset('footballer-seven')`);
  const preset=await editor.webContents.executeJavaScript(`window.magigraph.getDesign()`);assert.equal(preset.shapes.length,60);assert.ok(preset.shapes[0].id.startsWith('footballer-'));console.log('Footballer preset loads in desktop');
+ await editor.webContents.executeJavaScript(`document.querySelector('#layers button').click();document.getElementById('tracePanel').scrollIntoView({block:'start'});`);
+ fs.writeFileSync(path.join(app.isPackaged?app.getPath('userData'):__dirname,'smoke-editor.png'),(await editor.webContents.capturePage()).toPNG());
  clearTimeout(timer);app.exit(0);
  }catch(e){console.error(e);clearTimeout(timer);app.exit(1);}});

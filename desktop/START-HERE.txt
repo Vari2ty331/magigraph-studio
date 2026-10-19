@@ -15,11 +15,12 @@ Give AI-GUIDE.md and a reference image to another AI to create new drawings.
 Overlay:
 - Select a shape in the right-hand list.
 - Enable 위치 맞추기 to drag the overlay into alignment with the game's guides.
-- Adjust X/Y and circle diameter for fine tuning.
+- Use X/Y sliders for coarse alignment; the numeric fields and spinner arrows move one pixel at a time. Adjust circle diameter to match scale.
 - 고정 · 따라 그리기 returns to click-through tracing.
 - 오버레이 다시 표시 restores overlay visibility.
 - Ctrl+Shift+Space: show/hide; Ctrl+Shift+M: align/lock.
-- Ctrl+Shift+Left/Right: previous/next shape.
+- Ctrl+Shift+Left/Right: reveal the previous/next stroke, even while the game has focus. The overlay is shown if hidden; panel buttons provide the same action.
+- Yellow circles are endpoints; yellow diamonds are curve controls; the red circle moves the whole shape. Alt-drag selects a control overlapped by the red marker.
 
 All game drawing is manual. This program does not connect to or control the game.
 Autosaves/preferences are stored on this computer under AppData, not in this folder.
