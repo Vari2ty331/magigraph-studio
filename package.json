@@ -1,0 +1,17 @@
+{
+  "name": "magigraph-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Manual Magigraph design and tracing companion",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "start": "node desktop/launch.cjs",
+    "test": "node --check app.js && node geometry.test.cjs",
+    "test:desktop": "node desktop/launch.cjs --smoke",
+    "build:zip": "node desktop/build-zip.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3"
+  }
+}

@@ -1,0 +1,27 @@
+Magigraph Studio — Windows ZIP edition
+
+1. Extract the entire ZIP to a local folder, such as Desktop or Downloads.
+2. Open the extracted Magigraph Studio folder.
+3. Double-click Magigraph Studio.exe.
+
+No installation, Node.js, Python, terminal, or internet connection is required.
+Keep the executable together with all its supporting files and folders.
+Run from a local disk; Windows may block Electron child processes on NAS drives.
+
+Import drawings using 도안 불러오기 (JSON).
+The Designs folder includes the current character and footballer JSON files.
+Give AI-GUIDE.md and a reference image to another AI to create new drawings.
+
+Overlay:
+- Select a shape in the right-hand list.
+- Enable 위치 맞추기 to drag the overlay into alignment with the game's guides.
+- Adjust X/Y and circle diameter for fine tuning.
+- 고정 · 따라 그리기 returns to click-through tracing.
+- 오버레이 다시 표시 restores overlay visibility.
+- Ctrl+Shift+Space: show/hide; Ctrl+Shift+M: align/lock.
+- Ctrl+Shift+Left/Right: previous/next shape.
+
+All game drawing is manual. This program does not connect to or control the game.
+Autosaves/preferences are stored on this computer under AppData, not in this folder.
+Export JSON to transfer drawings or keep backups. Close the app before replacing
+the extracted app folder with a newer version. AppData saves remain separate.

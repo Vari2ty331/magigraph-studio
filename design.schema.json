@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Magigraph design v1",
+  "description": "Structural constraints only. Unique IDs and full-stroke circular containment require simulator validation.",
+  "type": "object",
+  "required": [
+    "version",
+    "settings",
+    "shapes"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "settings": {
+      "type": "object",
+      "required": [
+        "stroke",
+        "outlineRatio"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "stroke": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10
+        },
+        "outlineRatio": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 0.1
+        }
+      }
+    },
+    "shapes": {
+      "type": "array",
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "x",
+          "y",
+          "size",
+          "rotation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "enum": [
+              "line",
+              "circle",
+              "disc",
+              "square",
+              "filled-square",
+              "triangle",
+              "filled-triangle",
+              "quadratic",
+              "cubic"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "size": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 200
+          },
+          "rotation": {
+            "type": "number"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "quadratic"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "points"
+              ],
+              "properties": {
+                "points": {
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "const": "cubic"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "points"
+              ],
+              "properties": {
+                "points": {
+                  "minItems": 4,
+                  "maxItems": 4
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "type": {
+                  "not": {
+                    "enum": [
+                      "quadratic",
+                      "cubic"
+                    ]
+                  }
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "points"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

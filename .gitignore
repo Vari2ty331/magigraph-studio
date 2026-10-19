@@ -1,0 +1,12 @@
+node_modules/
+desktop/smoke-preview.png
+dist/
+
+# Machine-local notes and private configuration
+CONTINUE.md
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db

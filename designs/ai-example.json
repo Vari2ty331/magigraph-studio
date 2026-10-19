@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "settings": {
+    "stroke": 1.25,
+    "outlineRatio": 0.02
+  },
+  "shapes": [
+    {
+      "id": "left-eye",
+      "type": "quadratic",
+      "x": 0,
+      "y": 0,
+      "size": 1,
+      "rotation": 0,
+      "points": [
+        {
+          "x": -18,
+          "y": -8
+        },
+        {
+          "x": -13,
+          "y": -12
+        },
+        {
+          "x": -8,
+          "y": -8
+        }
+      ]
+    },
+    {
+      "id": "right-eye",
+      "type": "quadratic",
+      "x": 0,
+      "y": 0,
+      "size": 1,
+      "rotation": 0,
+      "points": [
+        {
+          "x": 8,
+          "y": -8
+        },
+        {
+          "x": 13,
+          "y": -12
+        },
+        {
+          "x": 18,
+          "y": -8
+        }
+      ]
+    },
+    {
+      "id": "smile",
+      "type": "cubic",
+      "x": 0,
+      "y": 0,
+      "size": 1,
+      "rotation": 0,
+      "points": [
+        {
+          "x": -15,
+          "y": 8
+        },
+        {
+          "x": -10,
+          "y": 24
+        },
+        {
+          "x": 10,
+          "y": 24
+        },
+        {
+          "x": 15,
+          "y": 8
+        }
+      ]
+    }
+  ]
+}

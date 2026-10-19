@@ -1,0 +1,4 @@
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}img{display:block;width:100%;height:100%;pointer-events:none}
+body{user-select:none;touch-action:none}body.aligning{background:rgba(0,160,200,.045);cursor:move}
+#alignmentBar{position:absolute;top:0;left:0;right:0;padding:5px 8px;background:#183c48;color:white;font:12px 'Malgun Gothic',sans-serif;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#alignmentBar[hidden]{display:none}button{-webkit-app-region:no-drag;background:#fff0a0;color:#222;border:0;border-radius:3px;padding:5px;cursor:pointer}

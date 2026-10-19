@@ -1,0 +1,61 @@
+const {app,BrowserWindow}=require('electron');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+require('./main.cjs');
+const timer=setTimeout(()=>{console.error('Desktop smoke test timed out');app.exit(1);},30000);
+app.whenReady().then(async()=>{try{
+ const wins=BrowserWindow.getAllWindows();wins.forEach(w=>w.webContents.on('console-message',event=>{if(event.level==='error')console.error(event.message);}));
+ await Promise.all(wins.map(w=>new Promise(resolve=>{const done=()=>{resolve();};w.webContents.once('did-finish-load',done);if(w.webContents.getURL().endsWith('.html')&&!w.webContents.isLoading())resolve();}))); 
+
+ const editor=wins.find(w=>w.webContents.getURL().endsWith('/index.html')),overlay=wins.find(w=>w.webContents.getURL().endsWith('/overlay.html'));
+ const result=await editor.webContents.executeJavaScript(`(()=>{
+ window.magigraph.setDesign({version:1,settings:{stroke:1.25,outlineRatio:.02},shapes:[{id:'smoke-curve',type:'cubic',x:0,y:0,size:1,rotation:0,points:[{x:-30,y:-15},{x:-25,y:25},{x:25,y:-25},{x:30,y:15}]}]});
+ document.querySelector('#layers button').click();
+ document.getElementById('traceDiameter').value=400;document.getElementById('traceX').value=100;document.getElementById('traceY').value=100;document.getElementById('traceOpacity').value=.8;
+ document.getElementById('traceX').dispatchEvent(new Event('input'));
+ document.getElementById('traceToggle').click();
+ return {lines:document.querySelectorAll('#handles polyline').length,points:document.querySelectorAll('#handles [data-handle]').length,center:[document.querySelector('#handles [data-transform="move"]').getAttribute('cx'),document.querySelector('#handles [data-transform="move"]').getAttribute('cy')],panel:!document.getElementById('tracePanel').hidden};})()`);
+
+ assert.equal(result.lines,2);assert.equal(result.points,4);assert.deepEqual(result.center,['0','0']);assert.equal(result.panel,true);
+ // Wait for the image decode in the receiving renderer before capturing it.
+ await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');if(img.src&&img.complete)resolve();else img.onload=resolve;})`);
+ assert.equal(editor.isVisible(),true,'The editor must be visible as well as the overlay');
+ assert.equal(overlay.getBounds().width,440);assert.equal(overlay.isVisible(),true);
+ const data=await overlay.webContents.executeJavaScript(`(()=>{let img=document.getElementById('trace');return {src:decodeURIComponent(img.src),width:img.naturalWidth};})()`);
+ assert.ok(data.width>0);assert.ok(data.src.includes('polyline'));assert.ok(!data.src.includes('refImage'));
+ assert.ok(data.src.includes('traceGuideLines'));assert.ok(data.src.includes('r="25"'));assert.ok(data.src.includes('r="12.5"'));assert.ok(data.src.includes('r="37.5"'));
+ await overlay.webContents.executeJavaScript(`document.getElementById('trace').decode().then(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))`);
+ fs.writeFileSync(path.join(app.isPackaged?app.getPath('userData'):__dirname,'smoke-preview.png'),(await overlay.webContents.capturePage()).toPNG());
+ await editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onAlignment(value=>{if(value)resolve();});document.getElementById('traceAlign').click();})`);
+ assert.equal(overlay.isFocusable(),false,'Alignment must not activate the overlay');
+ const alignment=await overlay.webContents.executeJavaScript(`new Promise(resolve=>{const check=()=>{if(document.body.classList.contains('aligning'))resolve({region:getComputedStyle(document.body).webkitAppRegion,button:getComputedStyle(document.getElementById('lock')).webkitAppRegion});};new MutationObserver(check).observe(document.body,{attributes:true});check();})`);
+ assert.notEqual(alignment.region,'drag');assert.equal(alignment.button,'no-drag');
+ await overlay.webContents.executeJavaScript(`window.traceDesktop.drag('start');window.traceDesktop.drag('move');window.traceDesktop.drag('end');`);
+ assert.equal(overlay.isFocused(),false);assert.equal(overlay.isVisible(),true);
+ const positionUpdate=editor.webContents.executeJavaScript(`new Promise(resolve=>{window.traceDesktop.onPosition(position=>{if(position.x===160&&position.y===190)resolve();});})`);
+ overlay.setPosition(160,190);await positionUpdate;
+ assert.deepEqual(await editor.webContents.executeJavaScript(`['traceX','traceY'].map(id=>Number(document.getElementById(id).value))`),[160,190]);
+ assert.deepEqual(await editor.webContents.executeJavaScript(`(()=>{let p=JSON.parse(localStorage.getItem('magigraph-trace-v1'));return[p.traceX,p.traceY];})()`),[160,190]);
+ const pinned=new Promise(resolve=>overlay.once('show',resolve));
+ const pinBounds=overlay.getBounds();
+ const pin=await overlay.webContents.executeJavaScript(`(()=>{let r=document.getElementById('lock').getBoundingClientRect();return{x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};})()`);
+ overlay.webContents.sendInputEvent({type:'mouseDown',...pin,button:'left',clickCount:1});
+ overlay.webContents.sendInputEvent({type:'mouseUp',...pin,button:'left',clickCount:1});
+ await pinned;
+ assert.equal(overlay.isFocusable(),false);
+ assert.equal(overlay.isVisible(),true);assert.deepEqual(overlay.getBounds(),pinBounds);
+ assert.equal(await overlay.webContents.executeJavaScript(`document.getElementById('alignmentBar').hidden`),true);
+ const hidden=new Promise(resolve=>overlay.once('hide',resolve));
+ await editor.webContents.executeJavaScript(`document.getElementById('traceToggle').click();`);await hidden;
+ const restored=new Promise(resolve=>overlay.once('show',resolve));
+ await editor.webContents.executeJavaScript(`document.getElementById('traceRestore').click();`);await restored;
+ assert.equal(overlay.isVisible(),true);assert.deepEqual(overlay.getBounds(),pinBounds);
+ await editor.webContents.executeJavaScript(`document.getElementById('traceGuides').click();`);
+ const noGuides=await overlay.webContents.executeJavaScript(`new Promise(resolve=>{let img=document.getElementById('trace');const check=()=>{if(!decodeURIComponent(img.src).includes('traceGuideLines'))resolve(true);};new MutationObserver(check).observe(img,{attributes:true});check();})`);
+ assert.equal(noGuides,true);
+ console.log('Desktop smoke passed: rendering, non-activating alignment, mouse pin click, delayed click-through redraw, visibility recovery, position persistence and guides.');
+ await editor.webContents.executeJavaScript(`loadCharacterPreset('footballer-seven')`);
+ const preset=await editor.webContents.executeJavaScript(`window.magigraph.getDesign()`);assert.equal(preset.shapes.length,60);assert.ok(preset.shapes[0].id.startsWith('footballer-'));console.log('Footballer preset loads in desktop');
+ clearTimeout(timer);app.exit(0);
+ }catch(e){console.error(e);clearTimeout(timer);app.exit(1);}});
