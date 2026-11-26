@@ -1,4 +1,4 @@
-const {app,BrowserWindow,globalShortcut,clipboard}=require('electron');
+const {app,BrowserWindow,globalShortcut,clipboard,ipcMain,screen}=require('electron');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
@@ -169,7 +169,23 @@ app.whenReady().then(async()=>{try{
  editor.focus();await new Promise(resolve=>setTimeout(resolve,100));assert.equal(panel.isFocusable(),true);
  assert.equal(panel.isAlwaysOnTop(),true);
  assert.equal(await panel.webContents.executeJavaScript(`document.getElementById('radiusSlider')===null`),true);
- overlay.setPosition(330,240);await new Promise(resolve=>setTimeout(resolve,160));
+ const dragStart=overlay.getBounds(),dragEvent={sender:overlay.webContents};
+ const dragSize=overlay.getContentSize();
+ const getCursorScreenPoint=screen.getCursorScreenPoint;
+ let cursor={x:0,y:0};
+ try{
+  screen.getCursorScreenPoint=()=>cursor;
+  ipcMain.emit('trace-drag',dragEvent,'start');
+  for(let step=1;step<=10;step++){
+   cursor={x:Math.round((330-dragStart.x)*step/10),y:Math.round((240-dragStart.y)*step/10)};
+   ipcMain.emit('trace-drag',dragEvent,'move');
+   assert.deepEqual(overlay.getContentSize(),dragSize,'Dragging must preserve the overlay size');
+  }
+ }finally{
+  ipcMain.emit('trace-drag',dragEvent,'end');
+  screen.getCursorScreenPoint=getCursorScreenPoint;
+ }
+ await new Promise(resolve=>setTimeout(resolve,160));
  assert.deepEqual(await panel.webContents.executeJavaScript(`['xNumber','yNumber'].map(id=>Number(document.getElementById(id).value))`),[330,240]);
  assert.deepEqual(await editor.webContents.executeJavaScript(`['traceX','traceY'].map(id=>Number(document.getElementById(id).value))`),[330,240]);
  // A lost native topmost flag must recover without restarting the app.
@@ -200,5 +216,81 @@ app.whenReady().then(async()=>{try{
  console.log('Repeated controller clicks and focus changes preserve visibility and topmost state without style toggling.');
  console.log('Controller X/Y and radius synchronization, close-only-panel and header reopen passed.');
  console.log('Floating controls: mouse previous/next, full mode, hide/show recovery, alignment lock and panel visibility passed.');
+
+ const fixture=count=>({version:1,graphCount:count,settings:{stroke:1.25,outlineRatio:.02},shapes:Array.from({length:count*60},(_,index)=>{
+  const angle=index%60*Math.PI/30,radius=14+Math.floor(index/60)*12;
+  return{id:`stroke-${index+1}`,type:'disc',x:Math.cos(angle)*radius,y:Math.sin(angle)*radius,size:1.5,rotation:0};
+ })});
+ const graphUi=()=>editor.webContents.executeJavaScript(`(()=>{
+  const labels=[...document.querySelectorAll('#numberLabels [data-shape-number]')].map(label=>label.dataset.shapeNumber);
+  return {count:document.getElementById('count').textContent,ink:document.getElementById('art').children.length,labels};
+ })()`);
+ const graphButton=graph=>editor.webContents.executeJavaScript(`document.querySelector('[data-graph-view="${graph}"]').click()`);
+ const traceCount=count=>overlay.webContents.executeJavaScript(`new Promise(resolve=>{
+  const image=document.getElementById('trace');
+  const check=()=>{
+   const xml=new DOMParser().parseFromString(decodeURIComponent(image.src.slice(image.src.indexOf(',')+1)),'image/svg+xml');
+   if(xml.querySelector('[data-overlay-art="full"]')?.children.length!==${count})return;
+   observer.disconnect();resolve([...xml.querySelectorAll('[data-shape-number]')].map(label=>label.getAttribute('data-shape-number')));
+  };
+  const observer=new MutationObserver(check);observer.observe(image,{attributes:true});check();
+ })`);
+ const writeClipboard=clipboard.writeText;
+ try{
+  clipboard.writeText=()=>{};
+  for(const count of [2,3]){
+   const prompt=await editor.webContents.executeJavaScript(`(async()=>{
+    const mode=document.getElementById('graphCount');mode.value=${count};mode.dispatchEvent(new Event('change'));
+    await document.getElementById('copyAi').onclick();return document.getElementById('aiPrompt').value;
+   })()`);
+   assert.ok(prompt.startsWith('첨부한')&&prompt.includes(`최대 ${count*60}획`)&&prompt.includes(`graphCount는 ${count}`));
+  }
+ }finally{clipboard.writeText=writeClipboard;}
+ for(const count of [2,3]){
+  const json=JSON.stringify(fixture(count));
+  await editor.webContents.executeJavaScript(`(()=>{
+   document.getElementById('json').value=${JSON.stringify(json)};document.getElementById('apply').click();
+   document.getElementById('numbers').checked=true;document.getElementById('traceFull').checked=true;
+   document.getElementById('preview').checked=true;document.getElementById('preview').dispatchEvent(new Event('change'));
+  })()`);
+  const all=await graphUi(),total=count*60;
+  assert.ok(all.count.endsWith(`${total} / ${total}`));assert.equal(all.ink,total);
+  assert.equal(all.labels[0],'1-1');assert.equal(all.labels[60],'2-1');assert.equal(all.labels.at(-1),`${count}-60`);
+ }
+ assert.equal((await traceCount(180)).at(-1),'3-60');
+ await graphButton(2);
+ const second=await graphUi();assert.equal(second.ink,60);assert.equal(second.labels[0],'1');assert.equal(second.labels.at(-1),'60');
+ assert.equal((await traceCount(60)).at(-1),'60');
+ await editor.webContents.executeJavaScript(`document.getElementById('traceNext').click()`);
+ assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('traceSelection').textContent`),'마기그래프 2 · 1 / 60 · 꽉 찬 원');
+
+ const downloadFile=async id=>{
+  const downloaded=new Promise((resolve,reject)=>editor.webContents.session.once('will-download',(_event,item)=>{
+   const name=item.getFilename(),file=path.join(app.getPath('userData'),name);
+   item.setSavePath(file);item.once('done',(_event,state)=>state==='completed'?resolve({name,text:fs.readFileSync(file,'utf8')}):reject(Error(state)));
+  }));
+  await editor.webContents.executeJavaScript(`document.getElementById('${id}').click()`);return downloaded;
+ };
+ const singleFile=await downloadFile('saveGraph'),single=JSON.parse(singleFile.text);
+ assert.equal(singleFile.name,'magigraph-2.json');assert.equal(single.shapes.length,60);assert.equal(single.shapes[0].id,'stroke-61');
+ assert.ok(!('graphCount' in single)&&single.shapes.every(s=>!('graph' in s)));
+ const singleGuide=await downloadFile('guide');assert.equal(singleGuide.name,'magigraph-2-guide.txt');
+ assert.deepEqual(singleGuide.text.match(/^마기그래프 \d · \d+ \/ 60획$/gm),['마기그래프 2 · 60 / 60획']);
+ assert.equal((singleGuide.text.match(/^\d+\. /gm)||[]).length,60);
+ const combinedFile=await downloadFile('save');assert.equal(JSON.parse(combinedFile.text).shapes.length,180);
+ await graphButton(0);
+ const allGuide=await downloadFile('guide');
+ assert.deepEqual(allGuide.text.match(/^마기그래프 \d · \d+ \/ 60획$/gm),['마기그래프 1 · 60 / 60획','마기그래프 2 · 60 / 60획','마기그래프 3 · 60 / 60획']);
+ assert.equal((allGuide.text.match(/^1\. /gm)||[]).length,3);
+ await graphButton(1);
+ await editor.webContents.executeJavaScript(`document.querySelector('#layers .delete-shape').click()`);
+ await graphButton(2);
+ assert.equal(await editor.webContents.executeJavaScript(`document.querySelector('#art [data-id]').dataset.id`),'stroke-61');
+ assert.equal((await graphUi()).ink,60);
+ await editor.webContents.executeJavaScript(`document.getElementById('undo').click()`);
+ assert.equal((await graphUi()).ink,60);
+ await editor.webContents.executeJavaScript(`(()=>{const mode=document.getElementById('graphCount');mode.value=2;mode.dispatchEvent(new Event('change'));})()`);
+ assert.equal(await editor.webContents.executeJavaScript(`document.getElementById('graphCount').value`),'3');
+ console.log('120/180-stroke prompts, composite preview, graph navigation, overlay, and separate production exports passed.');
  clearTimeout(timer);app.exit(0);
  }catch(e){console.error(e);clearTimeout(timer);app.exit(1);}});

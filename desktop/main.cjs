@@ -8,6 +8,11 @@ const smoke=process.argv.includes('--self-test')||process.argv.some(arg=>path.ba
 app.setPath('userData',smoke?path.join(app.getPath('temp'),'magigraph-smoke-'+process.pid):path.join(app.getPath('appData'),'Magigraph Studio'));
 let editor,overlay,controls,lastImage,shown=false,aligning=false,placementDrag=null,modeTimer,panelEnabled=true;
 let controlState={selection:'선택한 획 없음',full:false,x:100,y:100,diameter:400,opacity:.8};
+function placeOverlay(x,y,diameter){
+ // Position-only updates can accumulate rounding in the window size at fractional Windows DPI.
+ const size=Math.round(diameter*1.1);
+ overlay.setBounds({x:Math.round(x),y:Math.round(y),width:size,height:size});
+}
 function syncControls(){if(controls&&!controls.isDestroyed())controls.webContents.send('trace-controls-state',{...controlState,shown,aligning});}
 function pinControls(){
  if(!controls||controls.isDestroyed())return;
@@ -96,7 +101,7 @@ app.whenReady().then(()=>{
  ipcMain.on('trace-update',(e,data)=>{
   if(e.sender!==editor.webContents||!data||typeof data.image!=='string'||!data.image.startsWith('data:image/svg+xml,')||data.image.length>2000000)return;
   if(![data.x,data.y,data.diameter,data.opacity].every(Number.isFinite)||data.diameter<100||data.diameter>3000||Math.abs(data.x)>30000||Math.abs(data.y)>30000||data.opacity<.1||data.opacity>1)return;
-  if(data.place===true)overlay.setBounds({x:Math.round(data.x),y:Math.round(data.y),width:Math.round(data.diameter*1.1),height:Math.round(data.diameter*1.1)});
+  if(data.place===true)placeOverlay(data.x,data.y,data.diameter);
   overlay.setOpacity(data.opacity);lastImage=data.image;
   overlay.webContents.send('trace-image',lastImage);
   const position=overlay.getBounds();
@@ -109,8 +114,15 @@ app.whenReady().then(()=>{
   if(e.sender!==overlay.webContents)return;
   if(phase==='end'){placementDrag=null;return;}
   if(!aligning||!shown)return;
-  if(phase==='start'){placementDrag={cursor:screen.getCursorScreenPoint(),bounds:overlay.getBounds()};return;}
-  if(phase==='move'&&placementDrag){let cursor=screen.getCursorScreenPoint(),start=placementDrag;overlay.setPosition(start.bounds.x+cursor.x-start.cursor.x,start.bounds.y+cursor.y-start.cursor.y);}
+  if(phase==='start'){
+   const {x,y}=overlay.getBounds();
+   placementDrag={cursor:screen.getCursorScreenPoint(),x,y};
+   return;
+  }
+  if(phase==='move'&&placementDrag){
+   const cursor=screen.getCursorScreenPoint(),start=placementDrag;
+   placeOverlay(start.x+cursor.x-start.cursor.x,start.y+cursor.y-start.cursor.y,controlState.diameter);
+  }
  });
  const shortcuts=[['CommandOrControl+Shift+F',()=>editor.webContents.send('trace-full-toggle')],['CommandOrControl+Shift+M',()=>setAlignment(!aligning)],['CommandOrControl+Shift+Space',toggle],['CommandOrControl+Shift+Right',()=>stepStroke(1)],['CommandOrControl+Shift+Left',()=>stepStroke(-1)]];
  const unavailable=shortcuts.filter(([key,action])=>!globalShortcut.register(key,action)).map(([key])=>key);

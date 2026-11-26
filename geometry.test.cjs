@@ -1,8 +1,8 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync('app.js','utf8').split('function draw(){')[0];
 const context={document:{getElementById(){}}};vm.createContext(context);
-vm.runInContext(source+`;globalThis.api={validate,contained,world,width,selectionFrame,transformFromPointer,moveHandle,numberAnchor};`,context);
-const {validate,contained,width}=context.api;
+vm.runInContext(source+`;globalThis.api={validate,normalizeDesign,exportGraph,contained,world,width,selectionFrame,transformFromPointer,moveHandle,numberAnchor};`,context);
+const {validate,normalizeDesign,exportGraph,contained,width}=context.api;
 const base={version:1,settings:{stroke:1,outlineRatio:.014},shapes:[]};
 const shape=(type,extra={})=>({id:'a',type,x:0,y:0,size:20,rotation:0,...extra});
 assert.equal(contained(shape('circle',{x:39.8})),true);
@@ -27,6 +27,30 @@ assert.equal(width(shape('cubic',{size:80})),1.25);
 assert.equal(width(shape('square',{size:53.25}))*4,4.26);
 assert.equal(width(shape('square',{size:18}))*4,1.44);
 console.log('Geometry, format and screenshot calibration checks passed');
+
+const strokes=count=>Array.from({length:count},(_,i)=>shape('disc',{id:`stroke-${i+1}`}));
+for(const graphCount of [2,3]){
+ const limit=graphCount*60,input={...base,graphCount,shapes:strokes(limit)},normalized=normalizeDesign(input);
+ assert.equal(normalized.graphCount,graphCount);
+ assert.equal(normalized.shapes.length,limit);
+ assert.ok(input.shapes.every(s=>!('graph' in s)),'Import normalization must preserve the input');
+ for(let graph=1;graph<=graphCount;graph++){
+  const single=exportGraph(graph,normalized);
+  assert.equal(single.shapes.length,60);
+  assert.equal(single.shapes[0].id,`stroke-${(graph-1)*60+1}`);
+  assert.equal(single.shapes[59].id,`stroke-${graph*60}`);
+  assert.ok(!('graphCount' in single)&&single.shapes.every(s=>!('graph' in s)));
+  validate(single);
+ }
+ assert.throws(()=>validate({...input,shapes:strokes(limit+1)}),new RegExp(String(limit)));
+}
+const assigned={...base,graphCount:2,shapes:[{...strokes(1)[0],graph:2},shape('circle',{id:'frame',graph:1}),shape('line',{id:'detail',graph:2})]};
+assert.deepEqual(Array.from(normalizeDesign(assigned).shapes,s=>s.id),['frame','stroke-1','detail']);
+assert.throws(()=>validate({...assigned,shapes:strokes(61).map(s=>({...s,graph:2}))}),/2번.+60/);
+assert.throws(()=>validate({...assigned,shapes:[...assigned.shapes,shape('disc',{id:'unassigned'})]}),/graph/);
+assert.throws(()=>validate({...assigned,shapes:[shape('disc',{graph:3})]}),/graph/);
+assert.throws(()=>validate({...assigned,graphCount:4}),/graphCount/);
+console.log('Combined design budgets, group assignment and single-graph export checks passed');
 
 const {selectionFrame,transformFromPointer}=context.api;
 const square=shape('square',{x:3,y:4,size:20,rotation:30});

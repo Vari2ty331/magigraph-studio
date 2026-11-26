@@ -13,6 +13,10 @@
     "version": {
       "const": 1
     },
+    "graphCount": {
+      "enum": [1, 2, 3],
+      "default": 1
+    },
     "settings": {
       "type": "object",
       "required": [
@@ -35,7 +39,7 @@
     },
     "shapes": {
       "type": "array",
-      "maxItems": 60,
+      "maxItems": 180,
       "items": {
         "type": "object",
         "required": [
@@ -50,6 +54,11 @@
           "id": {
             "type": "string",
             "minLength": 1
+          },
+          "graph": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
           },
           "type": {
             "enum": [
@@ -164,5 +173,36 @@
         ]
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": { "required": ["graphCount"], "properties": { "graphCount": { "enum": [2, 3] } } }
+      },
+      "then": {
+        "properties": { "shapes": { "maxItems": 60, "items": { "properties": { "graph": { "maximum": 1 } } } } }
+      }
+    },
+    {
+      "if": { "required": ["graphCount"], "properties": { "graphCount": { "const": 2 } } },
+      "then": {
+        "properties": { "shapes": { "maxItems": 120, "items": { "properties": { "graph": { "maximum": 2 } } } } }
+      }
+    },
+    {
+      "if": { "properties": { "shapes": { "contains": { "required": ["graph"] } } } },
+      "then": {
+        "properties": {
+          "shapes": {
+            "items": { "required": ["graph"] },
+            "allOf": [
+              { "contains": { "properties": { "graph": { "const": 1 } } }, "minContains": 0, "maxContains": 60 },
+              { "contains": { "properties": { "graph": { "const": 2 } } }, "minContains": 0, "maxContains": 60 },
+              { "contains": { "properties": { "graph": { "const": 3 } } }, "minContains": 0, "maxContains": 60 }
+            ]
+          }
+        }
+      }
+    }
+  ]
 }

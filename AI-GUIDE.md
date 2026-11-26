@@ -4,27 +4,29 @@ You are creating editable geometry for a standalone Mabinogi Magigraph planning 
 
 ## User workflow
 
-1. Give the AI this guide and a reference image or description. State which details matter.
-2. Ask it to return one complete JSON object in a single JSON code block, with at most 60 shapes. Save as a .json file, or paste the JSON into 정밀 편집 · JSON and press JSON 적용.
+1. Choose one, two, or three magigraphs in Studio. Copy the AI prompt or give the AI this guide together with the desired count and a reference image or description.
+2. Ask for one complete JSON object in a single JSON code block. Save it as a `.json` file, or paste it into 정밀 편집 · JSON and press JSON 적용.
 3. Inspect the result in the simulator. If corrections are needed, give the AI the exported JSON, a simulator screenshot, and the requested changes. If import fails, provide the exact validation error too.
-4. Use 안내선 and the construction-order slider to copy the design manually into Mabinogi.
+4. Preview the composite in 전체. Select each numbered magigraph and use its construction order to copy it manually into Mabinogi. The stroke numbers restart at 1 for each magigraph.
 
 The AI does not need a connection to this website or an API key. Nothing is sent to an AI automatically. A link alone only works if the chosen AI can browse it; otherwise paste this guide or attach the downloaded file.
 
 ## Hard constraints
 
-- At most 60 shapes in the entire drawing. Every line, basic shape or complete Bézier curve is ONE shape. Do not spend the full budget unless useful; prefer recognizable silhouette and facial features to small details.
+- At most 60 shapes per magigraph. The combined budget is 60, 120, or 180 shapes for one, two, or three magigraphs. Each line, basic shape or complete Bézier curve counts as one shape. Spend the budget where it improves the drawing.
 - Circular drawing area: center (0,0), radius 50, diameter 100. Positive X is right; positive Y is DOWN. These are simulator units, not in-game numeric inputs.
 - All visible ink, including half the stroke width, must remain inside the circle. Keep the design comfortably inside radius 46 to allow corrections.
 - Lines and both curve types have fixed stroke width 1.25, independent of length or scale. Basic outline stroke width = size * 0.02. Filled shapes have no separate outline. Do not invent a per-shape width, opacity, color, arbitrary fill or custom path.
 - Circles remain circles; squares remain squares; triangles are equilateral. Only uniform scale is supported. No ellipse, rectangle, nonuniform transform, image embedding, compound path or general polygon.
-- Curves are OPEN strokes, never filled. Prefer curves for character outlines. You cannot create a filled custom contour by closing a curve. Overlapping allowed strokes can thicken selected marks but each counts toward 60.
+- Curves are open strokes. Closing a curve does not create a filled contour. Overlapping strokes can thicken selected marks, and each counts toward its magigraph's 60-shape limit.
 - Settings must remain {"stroke":1.25,"outlineRatio":0.02} for normal designs. These are calibrated to the supplied game screenshots; do not change them to fake variable stroke widths.
-- Shape order is bottom to top and also the manual construction order. Use unique string IDs. For revisions, preserve IDs and unchanged geometry where practical.
+- Within each magigraph, shape order is bottom to top and also the manual construction order. Studio previews the magigraphs in ascending graph order. Use unique string IDs across the entire design. For revisions, preserve IDs, graph assignments, and unchanged geometry where practical.
 
 ## JSON format
 
 Root object: {"version":1,"settings":{"stroke":1.25,"outlineRatio":0.02},"shapes":[...]}
+
+For a combined drawing, add `"graphCount":2` for up to 120 shapes or `"graphCount":3` for up to 180 shapes. Give every shape an integer `"graph"` from 1 to `graphCount` and assign no more than 60 shapes to any graph. All graphs share one coordinate system and together form one image. Plan the composition across graphs and keep related construction strokes together when possible. If every shape omits `graph`, Studio assigns the first 60 to graph 1, the next 60 to graph 2, and the remaining strokes to graph 3. For one magigraph, omit both fields.
 
 Every shape requires:
 - id: unique nonempty string
@@ -48,7 +50,7 @@ Transform a local point (u,v): worldX=x+size*(u*cos(a)-v*sin(a)); worldY=y+size*
 
 EASIEST CURVE AUTHORING: use x=0,y=0,size=1,rotation=0, and put the desired drawing coordinates directly in points. Avoid accidental double scaling. A cubic can make an S curve; a quadratic has only one shared control point. Control points can be outside the circle if the curve itself stays inside, but keep them inside when possible for simpler validation.
 
-## Minimal complete example (3 shapes)
+## Minimal single-magigraph example (3 shapes)
 
 ```json
 {"version":1,"settings":{"stroke":1.25,"outlineRatio":0.02},"shapes":[
@@ -64,7 +66,7 @@ Use design.schema.json to check structure. JSON Schema cannot prove geometric co
 
 If the browser environment supports page JavaScript execution, window.magigraph exposes:
 - getDesign(): returns an independent copy of the current JSON.
-- validate(design): checks structure, unique IDs, 60-object budget and stroke-aware circular containment. Throws on failure; does not alter the drawing.
+- validate(design): checks the budget for the selected magigraph count, graph assignments, unique IDs, and stroke-aware circular containment. It throws on failure and leaves the drawing intact.
 - setDesign(design): validates, loads and records an undo step.
 - getGuide(): returns the construction guide text.
 

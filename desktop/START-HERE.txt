@@ -11,6 +11,9 @@ Run from a local disk; Windows may block Electron child processes on NAS drives.
 Import drawings using 도안 불러오기 (JSON).
 The Designs folder includes the current character and footballer JSON files.
 Give AI-GUIDE.md and a reference image to another AI to create new drawings.
+Choose 마기그래프 수 above the canvas for 60, 120, or 180 strokes.
+Use 전체 to see the combined drawing. Select a numbered graph for its own
+stroke order, overlay, construction guide, and single-graph JSON export.
 
 Overlay:
 - Select a shape in the right-hand list; its numeric details appear below the list.

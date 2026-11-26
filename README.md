@@ -1,6 +1,6 @@
 # Magigraph Studio
 
-마비노기 마기그래프 도안을 만들고 수동으로 따라 그리기 위한 시뮬레이터입니다. 한국어 편집기, 최대 60개 도형, JSON 도안 교환, 선택 도형을 표시하는 Windows 오버레이를 제공합니다.
+마비노기 마기그래프 도안을 만들고 수동으로 따라 그리기 위한 시뮬레이터입니다. 마기그래프당 최대 60획, 합성 도안 최대 180획, JSON 도안 교환, Windows 오버레이를 제공합니다.
 
 ## Windows 사용자
 
@@ -22,16 +22,20 @@ Open index.html in a browser, or run `python -m http.server 8765 --bind 127.0.0.
 A standalone planning tool. It has no connection to Mabinogi and cannot send input to the game.
 
 ## Drawing
-Choose a tool and drag inside the disc. Basic shapes have uniform scale only. Circle size is diameter; square and equilateral triangle size is side length. Drag direction determines rotation. Lines and curves have fixed calibrated width; basic outlines grow with size. The limit is 60 objects, including each whole curve as one object.
+Choose a tool and drag inside the disc. Basic shapes have uniform scale only. Circle size is diameter; square and equilateral triangle size is side length. Drag direction determines rotation. Lines and curves have fixed calibrated width; basic outlines grow with size. Each magigraph holds up to 60 objects, and each whole curve counts as one object.
 
 Use Select to move a shape, or select it from construction order. Numeric values edit center, scale and rotation. Selected curves expose draggable endpoints and control points. Quadratic curves have one shared control point; cubic curves have two independent control points. Line endpoints are draggable. Every edit checks the entire visible stroke against the circular boundary, rather than merely clipping invalid ink. Curve control points may be outside the disc when the curve itself remains inside. Extremely close boundary cases are conservatively rejected.
 
 Undo/redo, duplication, deletion and construction reordering are supported. Save JSON to keep a portable editable design; the browser also auto-saves locally. A reference image can be displayed centered and fitted inside the disc; it is only a visual aid and is excluded from design exports. Clean preview hides the grid, reference and selection controls. The construction slider reveals successive shapes, and shape numbers plus the text guide aid manual copying.
 
+Choose **마기그래프 수** above the canvas for a 60-, 120-, or 180-stroke design. **전체** previews the composite. A numbered view shows one magigraph on the same coordinates and restarts its construction numbering at 1. The stroke list, playback, overlay, SVG export and construction guide follow the current view. **도안 저장 (JSON)** saves the entire project. **이 마기그래프 저장 (JSON)** exports the selected graph as a standard single design. You can reassign a stroke using **마기그래프** in its inspector.
+
 ## Precise / agent editing
 The expandable JSON editor, JSON files, and `window.magigraph.getDesign()`, `setDesign(design)`, `validate(design)` expose the same format and validation. No arbitrary executable code is loaded from a design.
 
 A design has `version: 1`, `settings: {stroke: 1.25, outlineRatio: 0.02}`, and a `shapes` array. Each shape needs a unique string `id`, `type`, `x`, `y`, positive `size`, and `rotation` in clockwise degrees. Types are `line`, `circle`, `disc`, `square`, `filled-square`, `triangle`, `filled-triangle`, `quadratic`, `cubic`. Curve `points` are three or four `{x,y}` points in local coordinates, transformed by uniform size, rotation and center translation. Lines use local endpoints (-0.5,0) and (0.5,0).
+
+Combined designs also have a `graphCount` of 2 or 3. Set each shape's `graph` to its magigraph number, or omit `graph` from every shape to split the `shapes` array in blocks of 60 on import. IDs are unique across the project and each group has its own stroke order. The copied AI prompt uses the current graph count.
 
 Disc diameter is 100, centered at (0,0); positive Y points down. Coordinates in the exported construction guide are world coordinates.
 
