@@ -1,35 +1,36 @@
-Magigraph Studio — Windows ZIP edition
+Magigraph Studio · Windows 빠른 안내
 
-1. Extract the entire ZIP to a local folder, such as Desktop or Downloads.
-2. Open the extracted Magigraph Studio folder.
-3. Double-click Magigraph Studio.exe.
+실행하기
 
-No installation, Node.js, Python, terminal, or internet connection is required.
-Keep the executable together with all its supporting files and folders.
-Run from a local disk; Windows may block Electron child processes on NAS drives.
+1. Windows용 ZIP 전체를 로컬 디스크의 폴더에 압축 해제합니다.
+2. 압축을 푼 폴더에서 Magigraph Studio.exe를 실행합니다.
+3. 실행 파일과 지원 파일은 같은 폴더에 둡니다. Node.js나 Python 설치는 필요 없습니다.
 
-Import drawings using 도안 불러오기 (JSON).
-The Designs folder includes the current character and footballer JSON files.
-Give AI-GUIDE.md and a reference image to another AI to create new drawings.
-Choose 마기그래프 수 above the canvas for 60, 120, or 180 strokes.
-Use 전체 to see the combined drawing. Select a numbered graph for its own
-stroke order, overlay, construction guide, and single-graph JSON export.
+도안 준비하기
 
-Overlay:
-- Select a shape in the right-hand list; its numeric details appear below the list.
-- Enable 전체 도안 표시 to see the complete drawing. Disable it to return to only the selected stroke.
-- Game guides are not a perfect circle: match the center and axes first, and use internal rings as approximate scale references.
-- Enable 위치 맞추기 to drag the overlay into alignment with the game's guides.
-- Use X/Y sliders for coarse alignment; the numeric fields and spinner arrows move one pixel at a time. Adjust circle diameter to match scale.
-- 고정 · 따라 그리기 returns to click-through tracing.
-- 오버레이 다시 표시 restores overlay visibility.
-- Ctrl+Shift+Space: show/hide; Ctrl+Shift+M: align/lock.
-- Ctrl+Shift+Left/Right: reveal the previous/next stroke, even while the game has focus. The overlay is shown if hidden; panel buttons provide the same action.
-- Yellow circles are endpoints; yellow diamonds are curve controls; the red circle moves the whole shape. Alt-drag selects a control overlapped by the red marker.
+- 상단의 기본 도안을 열거나 「도안 불러오기 (JSON)」로 파일을 엽니다.
+- 캔버스 위 「마기그래프 수」에서 1개(60획), 2개(120획), 3개(180획)를 선택합니다.
+- 「전체」는 합성 도안을 표시합니다. 번호를 선택하면 해당 마기그래프만 표시되고 획 번호가 1부터 시작합니다.
+- 「도안 저장 (JSON)」은 전체를 저장합니다. 「이 마기그래프 저장 (JSON)」은 선택한 번호만 저장합니다. 「제작 순서 안내 저장」은 현재 보기의 획 순서와 좌표를 텍스트로 저장합니다.
+- AI에 도안을 요청하려면 「내 AI로 도안 만들기」에서 「AI 안내문 복사」를 누릅니다. 결과는 「정밀 편집 · JSON」에 붙여 넣고 「JSON 적용」을 누르세요. 안내문 파일은 AI-GUIDE.md에 있습니다.
 
-All game drawing is manual. This program does not connect to or control the game.
-Autosaves/preferences are stored on this computer under AppData, not in this folder.
-Export JSON to transfer drawings or keep backups. Close the app before replacing
-the extracted app folder with a newer version. AppData saves remain separate.
+게임 위에 따라 그리기
 
-- Ctrl+Shift+F: toggle full drawing / selected stroke in the overlay, even while the game has focus.
+1. 게임의 마기그래프 디자인 화면에서 안내선을 켭니다. Studio에서 제작할 마기그래프 번호와 획을 고르고 「오버레이 표시」를 누릅니다.
+2. 「위치 맞추기」를 켭니다. 오버레이를 드래그해 두 화면의 중심과 가로·세로축을 먼저 맞춘 뒤 본창의 「원 지름 (화면 px)」으로 크기를 조절합니다. 내부 원은 크기 참고용입니다.
+3. 창 X/Y 숫자 입력으로 위치를 미세 조정한 뒤 「고정 · 따라 그리기」를 누릅니다. 고정하면 마우스 클릭이 아래 게임 창으로 전달됩니다.
+4. 「이전 획」과 「다음 획」으로 획을 바꾸면서 직접 그립니다. 「전체 도안 표시」는 현재 보기의 모든 획을 띄웁니다. 오버레이가 사라지면 「오버레이 다시 표시」를 누르세요.
+
+상단의 「조작 패널 표시」로 획 선택, 표시 전환, 위치 맞추기를 위한 별도 패널을 열 수 있습니다. 조작 패널에서 위치 맞추기를 켜면 X/Y, 원 반지름, 불투명도를 조절할 수 있습니다. 단축키가 작동하지 않을 때는 패널의 버튼을 사용하세요.
+
+빨간 점은 도형 이동, 노란 원은 끝점, 노란 마름모는 곡률 조절에 사용합니다. 조절점이 빨간 점과 겹치면 Alt를 누른 채 드래그하세요.
+
+- Ctrl+Shift+← / →    이전 획 / 다음 획 표시
+- Ctrl+Shift+F        현재 보기의 전체 도안 / 선택한 획 전환
+- Ctrl+Shift+Space    오버레이 표시 / 숨기기
+- Ctrl+Shift+M        위치 맞추기 / 고정 전환
+
+자동 저장과 환경 설정은 Windows의 %APPDATA%\Magigraph Studio에 보관됩니다. 버전을 바꾸거나 다른 PC로 옮기기 전에는 작업 중인 도안을 JSON으로 저장해 두세요.
+
+전체 사용 설명서
+https://github.com/Vari2ty331/magigraph-studio#readme

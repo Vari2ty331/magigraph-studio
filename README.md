@@ -1,118 +1,119 @@
 # Magigraph Studio
 
-마비노기 마기그래프 도안을 만들고 수동으로 따라 그리기 위한 시뮬레이터입니다. 마기그래프당 최대 60획, 합성 도안 최대 180획, JSON 도안 교환, Windows 오버레이를 제공합니다.
+Magigraph Studio는 마비노기 마기그래프 도안을 만들고 게임에서 직접 따라 그리기 위한 편집기입니다. 마기그래프 하나에 최대 **60획**, 두 개를 합치면 **120획**, 세 개를 합치면 **180획**을 배치할 수 있습니다. Windows판은 선택한 획과 안내선을 게임 창 위에 띄울 수 있습니다. [Windows 다운로드](https://github.com/Vari2ty331/magigraph-studio/releases/latest) · [변경 내역](CHANGELOG.md)
 
-## Windows 사용자
+[설치 및 실행](#설치-및-실행) · [도안 편집](#도안-편집) · [합성 도안](#합성-도안) · [저장과 공유](#저장과-공유) · [AI로 도안 만들기](#ai로-도안-만들기) · [Windows 오버레이](#windows-오버레이) · [개발 및 배포](#개발-및-배포)
 
-[GitHub Releases](https://github.com/Vari2ty331/magigraph-studio/releases/latest)의 Windows ZIP을 내려받아 **로컬 디스크에 전체 압축을 풀고** `Magigraph Studio.exe`를 실행하세요. Node.js나 Python 설치는 필요하지 않습니다. 실행 파일과 지원 폴더를 함께 유지하세요. 자동 업데이트는 없으며 새 버전은 ZIP을 다시 내려받아 사용합니다.
+## 설치 및 실행
 
-오버레이는 사용자가 직접 그리기 위한 시각 안내입니다. 게임 접속, 화면 캡처, 게임 입력 자동화는 하지 않습니다. 상세 사용법은 `desktop/START-HERE.txt`에 있습니다.
+### Windows x64 배포판
 
-## 개발 및 버전 관리
+1. [최신 릴리스](https://github.com/Vari2ty331/magigraph-studio/releases/latest)의 **Assets**에서 `Magigraph-Studio-<버전>-Windows-x64.zip`을 받으세요. 실행용 ZIP의 이름에는 `Windows-x64`가 들어 있습니다.
+2. ZIP 전체를 로컬 디스크의 폴더에 압축 해제한 뒤 `Magigraph Studio.exe`를 실행하세요. 실행 파일을 지원 파일과 같은 폴더에 두세요.
+3. 상단의 **둥근 캐릭터 도안**, **줄무늬 캐릭터 도안**, **등번호 7 선수 도안**으로 시작하거나 **도안 불러오기 (JSON)**로 가진 파일을 여세요. 기본 도안은 **미리보기**로 열립니다. 획을 직접 편집하려면 **미리보기**를 끄거나 오른쪽 목록에서 획을 선택하세요.
 
-- Node.js와 npm 설치 후 `npm ci`, `npm start`로 개발 버전을 실행합니다.
-- `npm test`: 도형·좌표·도안 검증. `npm run test:desktop`: 임시 프로필에서 데스크톱 검증.
-- `package.json`의 버전을 올리고 `npm run build:zip`으로 Windows ZIP을 생성합니다.
-- 소스 커밋에 버전 태그를 붙이고 GitHub Release에 같은 버전 ZIP을 업로드합니다.
-- `node_modules/`, `dist/`, 컴퓨터별 메모와 환경 설정은 Git에 포함하지 않습니다.
+설치나 Node.js, Python은 필요 없습니다. 새 버전으로 바꿀 때는 먼저 작업 중인 도안을 JSON으로 내보내고, 현재 앱을 닫은 뒤 새 ZIP을 별도 폴더에 풀어 실행하세요. 자동 저장과 환경 설정은 Windows의 `%APPDATA%\Magigraph Studio`에 보관됩니다. [ZIP 동봉 빠른 안내](desktop/START-HERE.txt)
 
+### 브라우저판
 
-Open index.html in a browser, or run `python -m http.server 8765 --bind 127.0.0.1` in this directory and visit http://127.0.0.1:8765.
+소스 폴더의 `index.html`을 열면 도안을 편집할 수 있습니다. 브라우저가 로컬 파일 읽기를 제한하는 경우, 기본 도안 버튼과 AI 안내문 복사를 쓰려면 소스 폴더에서 로컬 서버를 실행하세요. 아래 명령은 Python이 설치되어 있을 때 사용할 수 있습니다.
 
-A standalone planning tool. It has no connection to Mabinogi and cannot send input to the game.
+```sh
+python -m http.server 8765 --bind 127.0.0.1
+```
 
-## Drawing
-Choose a tool and drag inside the disc. Basic shapes have uniform scale only. Circle size is diameter; square and equilateral triangle size is side length. Drag direction determines rotation. Lines and curves have fixed calibrated width; basic outlines grow with size. Each magigraph holds up to 60 objects, and each whole curve counts as one object.
+서버를 실행한 뒤 [로컬 편집기](http://127.0.0.1:8765/)를 여세요. 자동 저장 데이터는 브라우저 프로필과 접속 주소별로 관리됩니다. 브라우저와 Windows판 사이에서 도안을 옮길 때는 JSON을 사용하세요. 투명 오버레이는 Windows 앱에서 사용할 수 있습니다.
 
-Use Select to move a shape, or select it from construction order. Numeric values edit center, scale and rotation. Selected curves expose draggable endpoints and control points. Quadratic curves have one shared control point; cubic curves have two independent control points. Line endpoints are draggable. Every edit checks the entire visible stroke against the circular boundary, rather than merely clipping invalid ink. Curve control points may be outside the disc when the curve itself remains inside. Extremely close boundary cases are conservatively rejected.
+## 도안 편집
 
-Undo/redo, duplication, deletion and construction reordering are supported. Save JSON to keep a portable editable design; the browser also auto-saves locally. A reference image can be displayed centered and fitted inside the disc; it is only a visual aid and is excluded from design exports. Clean preview hides the grid, reference and selection controls. The construction slider reveals successive shapes, and shape numbers plus the text guide aid manual copying.
+1. 왼쪽 **그리기 도구**에서 직선, 빈 도형, 꽉 찬 도형, **곡선** 또는 **2점 곡선**을 골라 원 안에서 드래그하세요. 직선과 각 곡선은 하나의 획입니다. 기본 도형은 비율을 유지한 채 크기가 바뀌며, 원의 크기는 지름, 네모와 정삼각형의 크기는 한 변의 길이입니다.
+2. **선택·이동**이나 오른쪽 도형 목록으로 획을 고르세요. 빨간 점을 드래그하면 도형 전체가 움직입니다. 직선과 곡선에서는 빨간 점이 양 끝점의 중간에 표시됩니다.
+3. 기본 도형의 노란 점을 드래그하면 크기와 회전을 함께 조절할 수 있습니다. 이때 `Shift`를 누르면 회전이 15° 단위로 맞춰집니다. 직선과 곡선의 노란 원은 끝점이며, 곡선의 노란 마름모는 곡률 조절점입니다. **곡선**은 조절점 1개, **2점 곡선**은 2개를 사용합니다. 조절점이 빨간 점과 겹치면 `Alt`를 누른 채 드래그하세요.
+4. 오른쪽 아래 **선택한 도형**에서 좌표와 치수를 확인하고 수정할 수 있습니다. 도형 복사와 삭제도 여기에서 할 수 있습니다. 목록의 `↑`·`↓`는 같은 마기그래프 안에서 제작 순서를 바꾸며, `×`는 해당 획을 지웁니다. 방향키로 선택한 획을 미세 이동하고 `Delete`로 삭제할 수 있습니다. 상단의 **되돌리기**와 **다시 실행**으로 편집을 취소하거나 다시 적용할 수 있습니다.
 
-Choose **마기그래프 수** above the canvas for a 60-, 120-, or 180-stroke design. **전체** previews the composite. A numbered view shows one magigraph on the same coordinates and restarts its construction numbering at 1. The stroke list, playback, overlay, SVG export and construction guide follow the current view. **도안 저장 (JSON)** saves the entire project. **이 마기그래프 저장 (JSON)** exports the selected graph as a standard single design. You can reassign a stroke using **마기그래프** in its inspector.
+원 안에 들어가는지는 선의 두께와 채운 면까지 포함해 검사합니다. 곡률 조절점이 원 밖에 있더라도 그려지는 곡선 전체가 안에 있으면 사용할 수 있습니다.
 
-## Precise / agent editing
-The expandable JSON editor, JSON files, and `window.magigraph.getDesign()`, `setDesign(design)`, `validate(design)` expose the same format and validation. No arbitrary executable code is loaded from a design.
+- **안내선 (게임 기준)**은 가로·세로축, 대각선, 내부 원을 표시합니다. **좌표 격자 (보조)**는 별도로 켤 수 있습니다.
+- **도형 번호**를 켜면 제작 순서가 캔버스에 표시됩니다. **순서대로 보기** 슬라이더로 표시할 획 수를 정하고, **이전 획**과 **다음 획**으로 하나씩 선택하세요.
+- **참고 이미지 → 이미지 불러오기**로 이미지를 캔버스에 놓고 **불투명도**를 조절할 수 있습니다. 참고 이미지는 도안 파일에 포함되지 않습니다. **미리보기**에서는 격자, 참고 이미지, 편집 안내점이 숨겨집니다. 게임 안내선과 도형 번호는 각각의 체크박스로 조절하세요.
 
-A design has `version: 1`, `settings: {stroke: 1.25, outlineRatio: 0.02}`, and a `shapes` array. Each shape needs a unique string `id`, `type`, `x`, `y`, positive `size`, and `rotation` in clockwise degrees. Types are `line`, `circle`, `disc`, `square`, `filled-square`, `triangle`, `filled-triangle`, `quadratic`, `cubic`. Curve `points` are three or four `{x,y}` points in local coordinates, transformed by uniform size, rotation and center translation. Lines use local endpoints (-0.5,0) and (0.5,0).
+### 좌표 및 두께 보정
 
-Combined designs also have a `graphCount` of 2 or 3. Set each shape's `graph` to its magigraph number, or omit `graph` from every shape to split the `shapes` array in blocks of 60 on import. IDs are unique across the project and each group has its own stroke order. The copied AI prompt uses the current graph count.
+Studio에서 원의 지름은 100이고 중심은 `(0, 0)`입니다. 오른쪽이 `+X`, 아래쪽이 `+Y`이며, 양의 회전 각도는 시계 방향입니다. 제작 순서 안내의 점 좌표에는 도형의 크기와 회전이 적용됩니다.
 
-Disc diameter is 100, centered at (0,0); positive Y points down. Coordinates in the exported construction guide are world coordinates.
+왼쪽 **두께 보정**에서 직선·곡선 두께와 기본 도형 테두리 비율을 변경할 수 있습니다. **스크린샷 기준 적용**의 기본값은 직선·곡선 두께가 원 지름의 1.25%, 기본 도형 테두리가 도형 크기의 2%입니다. 게임 화면의 선 두께를 근사한 값입니다. [측정 기록](CALIBRATION.md)
 
-## Fidelity assumptions
-The screenshots suggest quadratic and cubic Bézier tools. This interpretation and the equilateral triangle geometry need in-game confirmation. The calibration screenshots show a roughly 400-pixel disc and an exactly 5-pixel straight stroke, giving a default stroke of 1.25 units. The square outline defaults to 0.02 times its side length, approximating the soft edge's half-maximum width (about 4px for a 213px side, 1.5px for a 72px side). See CALIBRATION.md for measurement details. Curves retain the same fixed width as straight lines based on the stated game rule. Both can be calibrated without changing code. Glow, colors, effects, extra symbols, game size limits and exact mouse gestures are not replicated. The simulator does not claim pixel-perfect in-game parity.
+## 합성 도안
 
-The Korean calibration panel includes a screenshot preset. Old untouched defaults (1, 0.014) are migrated on restore if every shape remains within the circle; Undo restores the prior values. Customized settings and designs that would fail the new boundary check are preserved. Loaded JSON keeps its own calibration until the preset is applied.
+1. 캔버스 위 **마기그래프 수**에서 **1개 · 60획**, **2개 · 120획**, **3개 · 180획** 중 하나를 고르세요. 각 마기그래프는 최대 60획을 가집니다.
+2. **전체**에서 모든 마기그래프를 같은 원 위에 겹쳐 보고, **1번**, **2번**, **3번** 버튼으로 해당 마기그래프만 보세요. 개별 보기에서는 편집, 획 선택, 제작 순서 재생, 오버레이의 표시 범위가 해당 마기그래프에 맞춰집니다.
+3. 전체 보기의 `2-5`는 두 번째 마기그래프의 다섯 번째 획입니다. 개별 보기와 제작 순서 안내에서는 각 마기그래프의 획 번호가 1부터 시작합니다. **선택한 도형**의 **마기그래프** 항목에서 획을 다른 마기그래프로 옮길 수 있습니다.
+4. 전체 보기에서 새로 그리면 자리가 있는 첫 번째 마기그래프에 획이 추가됩니다. 번호를 선택한 상태에서는 해당 마기그래프에 추가됩니다. 마기그래프 수를 줄이려면 먼저 제외할 마기그래프의 획을 옮기거나 삭제하세요.
 
-## Interactive transforms
-Select a shape with Select / move or the shape list. Drag the center dot to move. For basic shapes, drag the single yellow dot on the lower selection-box edge: distance from center controls uniform size, and angle controls rotation simultaneously. Hold Shift for 15-degree rotation snapping. Lines show only a center and two endpoints: dragging an endpoint changes length and direction with the opposite endpoint fixed. Curves have translation and endpoint/control handles only; their resize/rotation control and size/rotation inspector fields are hidden. Numeric values update while dragging; a whole drag is one undo step. Actual ink must pass the existing stroke-aware boundary checks.
+게임에서는 번호별 도안을 직접 제작하세요. 완성한 마기그래프를 같은 세트에 넣고 **마기그래프 형상화** 관리 화면에서 **한 번에 그리기**를 켜면 발동할 때 함께 그려집니다. 게임에서 만든 도안을 **마기그래프 디자인** 미리보기에 등록해 합성 결과를 먼저 확인할 수도 있습니다. [마비노기 공식 업데이트 안내](https://mabinogi.nexon.com/m/news/notice_view.asp?id=4893919)
 
-## Game guide overlay
-The 안내선 checkbox toggles the screenshot-style guide: solid horizontal/vertical axes, dashed 45-degree diagonals, dashed rings at 25% and 75% of the disc radius, and a solid ring at 50%. This is the default guide. The prior square grid remains a separate optional aid. Guide visibility is independent of clean preview so the game guide can remain over a finished design for manual copying. Guide/grid preferences persist locally and neither overlay counts as a shape or appears in design exports.
+## 저장과 공유
 
-## Using another AI
-Open 내 AI로 도안 만들기 and copy the self-contained prompt. Give it to any AI with a reference image or description. Import its full JSON through 정밀 편집 · JSON → JSON 적용 (one enclosing JSON code fence is accepted), or load a .json file. For revisions, opt in to including the current design and give the AI a result screenshot. No API key or automatic AI connection is involved. AI-GUIDE.md describes the complete geometry protocol; design.schema.json checks structure and designs/ai-example.json is a valid minimal sample. Schema validation does not prove boundary containment; the simulator remains the final validator.
+| 메뉴 | 저장 또는 불러오는 내용 |
+| --- | --- |
+| **도안 저장 (JSON)** | 편집 가능한 전체 프로젝트를 `magigraph.json`으로 저장합니다. 개별 보기 중에도 전체 프로젝트가 저장됩니다. |
+| **이 마기그래프 저장 (JSON)** | 번호를 선택하면 나타납니다. 해당 마기그래프만 `magigraph-2.json`과 같은 단일 도안 파일로 저장합니다. |
+| **도안 불러오기 (JSON)** | 단일 도안, 합성 도안, 이전 버전에서 저장한 JSON을 엽니다. |
+| **이미지 저장 (SVG)** | 현재 보기의 전체 도안을 이미지로 저장합니다. 예를 들어 2번 보기에서는 2번 마기그래프만 내보냅니다. |
+| **제작 순서 안내 저장** | 전체 보기에서는 마기그래프별 번호와 좌표를 한 텍스트 파일에 저장합니다. 개별 보기에서는 해당 마기그래프의 안내만 저장합니다. |
 
-## Desktop tracing companion (Windows)
+SVG와 제작 순서 안내에는 현재 보기의 모든 획이 포함됩니다. **순서대로 보기** 슬라이더는 화면에 표시할 획 수를 조절합니다. 편집을 이어가거나 다른 컴퓨터에서 작업할 때는 JSON을 사용하세요.
 
-The website still runs without dependencies. For an optional transparent desktop overlay, install Node.js, run `npm install` once in this folder, then `npm start`. This opens the same simulator in Electron. Browser localStorage and Electron localStorage are separate; transfer drawings using JSON.
+## AI로 도안 만들기
 
-Select a shape, then use 게임 위에 따라 그리기 in the left panel. Set the overlay window X/Y and drawing-circle diameter manually, then press 오버레이 표시. By default only the selected shape and its editing guides appear over other windows; 전체 도안 표시 can show the complete drawing. The cyan alignment circle is optional. The overlay passes mouse clicks through while locked. Enable 위치 맞추기 to drag the overlay, then use 고정 · 따라 그리기 on its top bar to lock it. X/Y controls follow the dropped position and remain available for fine tuning. Ctrl+Shift+M toggles alignment mode. Alignment mode captures clicks inside the overlay; lock it before drawing in the game. X/Y are the outer window's top-left position in desktop logical pixels, including negative positions for monitors to the left/top. The circle center is (X + diameter × 0.55, Y + diameter × 0.55), with 5% padding on every side. Saved alignment is local to this desktop app.
+1. 원하는 **마기그래프 수**를 선택하세요. 캔버스 아래의 **내 AI로 도안 만들기**를 펼쳐 **AI 안내문 복사**를 누르세요. 안내문에 선택한 60·120·180획 한도와 마기그래프당 60획 규칙이 들어갑니다. 자동 복사가 차단되면 선택된 안내문을 `Ctrl+C`로 복사하세요.
+2. 사용할 AI에 안내문과 참고 이미지 또는 그림 설명을 전달하고, 완성된 도안을 JSON으로 요청하세요. 기존 도안을 수정하려면 **현재 도안도 안내문에 포함 (수정 요청용)**을 켜고 복사하세요.
+3. AI의 결과를 **정밀 편집 · JSON**에 붙여 넣고 **JSON 적용**을 누르세요. JSON 코드 블록 하나를 그대로 붙여 넣어도 됩니다. 파일로 받았다면 **도안 불러오기 (JSON)**를 사용하세요.
+4. 가져오기가 실패하면 표시된 오류를 AI에 전달해 수정하세요. 도형 수, 마기그래프 번호, 중복 `id`, 원 밖으로 나가는 획 등을 검사합니다.
 
-Ctrl+Shift+Space shows/hides the overlay. Ctrl+Shift+Left/Right selects the previous/next shape without focusing the editor. Close the editor to close the overlay and release shortcuts. Shortcut registration may conflict with other applications; the show/hide button remains available. Use windowed/borderless game mode for initial testing; operation over the actual game, exclusive fullscreen and different DPI monitor combinations remains unverified.
+AI에는 사용자가 직접 전달한 내용만 넘어갑니다. 별도의 API 키나 앱 내 AI 설정은 필요 없습니다. [AI 도안 작성 규약](AI-GUIDE.md) · [JSON 스키마](design.schema.json) · [예제 JSON](designs/ai-example.json)
 
-The companion does not discover, inspect or control the game, capture its screen, or generate game input. All drawing is manual. This is a local development launch, not a packaged Windows installer.
+### JSON 직접 편집
 
-## Selection guides calibrated from October 18 screenshots
+**현재 도안 가져오기**로 편집기의 도안을 JSON 입력란에 불러올 수 있습니다. 기본 구조는 `version: 1`, `settings`, `shapes`입니다. 합성 도안에는 `graphCount`를 `2` 또는 `3`으로 지정하고, 각 도형의 `graph`에 마기그래프 번호를 적으세요. 모든 도형에서 `graph`를 생략하면 배열 순서대로 60획씩 나눕니다. `id`는 전체 프로젝트 안에서 고유해야 합니다. 곡선의 `points`는 도형에 저장된 크기·회전·이동을 적용하기 전 좌표입니다. 형식과 도형 종류별 점 구성은 [AI 도안 작성 규약](AI-GUIDE.md)에 정리되어 있습니다.
 
-For lines and curves the red translation marker is the midpoint of the world-space endpoints, independently of control points. This is a display/editing pivot; stored JSON translation and geometry are unchanged. The cubic guide shows only the two endpoint-to-control segments, with no control-to-control segment. Quadratic guides connect each endpoint to the shared control; the supplied new screenshots show cubic curves, so quadratic game parity is not established by them.
+페이지 스크립트에서 `window.magigraph.getDesign()`으로 현재 도안을 읽고, `validate(design)`으로 검사한 뒤 `setDesign(design)`으로 불러올 수 있습니다. `getGuide()`는 전체 제작 순서 안내를 반환하며, `getGuide(2)`처럼 번호를 넘기면 해당 마기그래프의 안내를 반환합니다.
 
-Handle diameter and guide thickness are adjustable in screen pixels and do not change drawing ink. The overlay preserves those pixel sizes separately from the editor's scale. Markers may still overlap on very small curves; reduce marker size when necessary. Matching endpoints/control points is consistent with a cubic Bézier interpretation, but exact game rasterization and curve parity have not been proven.
+## Windows 오버레이
 
-Run `npm test` for syntax/geometry checks, or `npm run test:desktop` for the desktop smoke test. The latter briefly opens test windows and writes desktop/smoke-preview.png.
+1. 게임의 마기그래프 디자인 화면에서 안내선을 켜세요. Studio에서 따라 그릴 마기그래프 번호와 획을 선택한 뒤 왼쪽 **게임 위에 따라 그리기**에서 **오버레이 표시**를 누르세요. 게임 창 위에 나타나지 않으면 **오버레이 다시 표시**로 현재 위치에 다시 띄울 수 있습니다.
+2. **위치 맞추기**를 켠 뒤 오버레이를 드래그하세요. 두 화면의 중심 교차점과 가로·세로축부터 맞추고 **원 지름 (화면 px)**으로 크기를 조절하세요. 게임 안내선의 형태가 완전한 원과 다르므로 내부 원은 크기 참고용으로 쓰세요. **정렬용 게임 안내선 (축·내부 원)**과 **정렬용 바깥 원**은 오버레이에서 따로 조절합니다.
+3. **창 X**와 **창 Y** 슬라이더로 대략적인 위치를 잡고 숫자 입력으로 1픽셀씩 조절하세요. 창 위치는 오버레이 왼쪽 위의 Windows 논리 픽셀 좌표입니다. 기준 화면의 왼쪽이나 위에 있는 모니터에서는 음수 좌표를 사용할 수 있습니다.
+4. 오버레이의 **고정 · 따라 그리기**를 누르세요. 고정하면 마우스 클릭이 아래 게임 창으로 전달됩니다. **이전 획**과 **다음 획**으로 획을 바꾸며 게임에서 직접 그리세요. **전체 도안 표시**는 편집기의 순서 슬라이더와 별개로 현재 보기의 모든 획을 띄웁니다. 합성 상태를 보려면 **전체**, 게임에서 한 마기그래프를 제작할 때는 해당 번호를 선택하세요.
 
-The Windows launcher caches the Electron runtime under %LOCALAPPDATA%/Magigraph Studio/runtime/<version> so Chromium child processes run from a local disk even when the project is on a NAS. Project source remains on the shared drive.
+상단의 **조작 패널 표시**로 별도의 **따라 그리기** 패널을 열 수 있습니다. 패널의 **위치 맞추기**를 누르면 X/Y, **원 반지름 (px)**, **불투명도**가 펼쳐집니다. 조작 패널은 반지름을, 본창은 지름을 표시합니다. 패널의 **고정**을 누르면 위치 입력이 접히고, `×`로는 패널만 숨길 수 있습니다.
 
-Software rendering is enabled in the companion for stable transparent-window rendering on the tested Windows setup.
+오버레이에서 편집 안내점이 겹치면 왼쪽 **안내점 크기**에서 **점 지름 (px)**과 안내선의 **선 두께 (px)**를 줄이세요. 이 설정은 그려지는 획의 두께와 별개입니다. 오버레이가 게임 위에 보이지 않으면 창 모드나 테두리 없는 창 모드에서 확인해 보세요.
 
-Overlay alignment guides now default to the game-style horizontal/vertical axes, dashed diagonals and internal rings at radii 12.5, 25 and 37.5. Enable the game’s 안내선, match the axis intersection for position, then match the solid inner ring for scale using 원 지름. The outer alignment circle is optional and off by default. Overlay guide visibility is separate from the editor’s guide checkbox.
+| 단축키 | 동작 |
+| --- | --- |
+| `Ctrl+Shift+←` / `Ctrl+Shift+→` | 이전 획 / 다음 획을 표시합니다. 오버레이가 숨겨져 있으면 다시 표시합니다. |
+| `Ctrl+Shift+F` | 현재 보기의 전체 도안 / 선택한 획 표시를 전환합니다. |
+| `Ctrl+Shift+Space` | 오버레이를 표시하거나 숨깁니다. |
+| `Ctrl+Shift+M` | 위치 맞추기 / 고정을 전환합니다. |
 
-Alignment dragging keeps the overlay non-focusable to avoid activating it over the game. Pointer capture and cursor-position deltas move only the overlay; no game inputs are generated. The game-specific disappearance reported with the earlier native drag mode has not yet been verified as resolved.
+게임이 단축키를 먼저 처리하거나 다른 앱이 같은 단축키를 사용하는 경우 **따라 그리기** 패널의 버튼을 사용하세요. 단축키 충돌을 줄이려면 Magigraph Studio는 한 번에 한 복사본만 실행하세요.
 
-If the overlay disappears, 오버레이 다시 표시 restores it at its current position without toggling it off. Pinning now finishes the click before switching to click-through and refreshes the transparent window without activation.
+## 개발 및 배포
 
-The 등번호 7 선수 도안 preset recreates the supplied back-facing footballer photo as 60 curves, prioritizing the wide-legged pose and number 7. Name, sponsors and background are omitted. Editable JSON, SVG/PNG preview, Korean construction guide and build-footballer.py are in designs/. Browser link: ?design=footballer-seven.
+Node.js와 npm이 설치되어 있으면 저장소 폴더에서 다음 명령으로 개발판을 실행할 수 있습니다.
 
-## Extract-and-run Windows release
+```sh
+npm ci
+npm start
+```
 
-The release ZIP contains Magigraph Studio.exe and its supporting files. Extract the entire ZIP to a local folder, then double-click Magigraph Studio.exe. No installation or development tools are required. Keep the supporting folders beside the executable. START-HERE.txt includes launch/overlay instructions; AI-GUIDE.md, the schema and editable design JSONs are also available outside the packaged app. Autosaves remain in the existing Magigraph Studio AppData profile.
+Windows에서는 [`Start-Development.cmd`](Start-Development.cmd)로 현재 소스를 실행할 수도 있습니다. 최초 실행에 필요한 Electron은 `npm ci`로 준비합니다. 이후에는 로컬에 저장된 Electron으로 실행되며, 소스를 수정한 뒤에는 개발판을 닫고 다시 여세요. PowerShell에서 `npm` 스크립트 실행이 차단되면 `npm.cmd ci`, `npm.cmd start`를 사용하세요.
 
-Developers can run `npm.cmd run build:zip` to create the ZIP in dist/. Builds are staged locally to avoid running Chromium or packaging tools from the NAS. The executable accepts `--self-test` for isolated packaged checks without changing saved drawings.
+| 명령 | 용도 |
+| --- | --- |
+| `npm test` | JavaScript 문법, 도형·좌표, JSON 검증 |
+| `npm run test:desktop` | 임시 프로필에서 Windows 오버레이, 조작 패널, 합성 도안 내보내기 등을 점검 |
+| `npm run build:zip` | Windows x64 배포 ZIP을 만들어 `dist/`에 저장 |
 
-## Pre-release tracing refinements
-
-The sidebar uses aligned input rows rather than floating fields. X/Y each offer a slider for coarse positioning and a numeric field with one-pixel spinner increments; slider bounds follow connected displays, including negative monitor coordinates, and expand to retain manually entered positions. Window dragging, fields and sliders stay synchronized.
-
-Ctrl+Shift+Left/Right reveals the previous/next selected stroke without focusing the editor, including when the overlay was hidden. The panel also provides previous/next buttons and a stroke counter. Shortcut registration conflicts are reported instead of silently ignored.
-
-Yellow circles mark endpoints; yellow diamonds mark curve controls. Both retain the game's yellow palette, with a red translation circle painted above the guides and other markers, including quadratic curves. Alt-drag can access a curve control that overlaps the red marker. Editor and transparent overlay share the same marker renderer so shape and screen-pixel sizes match.
-
-## Canvas numbering and controls
-
-도형 번호 is independent of 미리보기. Badges attach to actual curve midpoints instead of JSON translation origins, avoid neighboring badges when space permits, and follow construction-order numbering. The selected stroke's badge also appears in the desktop overlay when enabled. Number visibility is saved as a view preference, and preset loading retains it. These are visual guides only; design JSON and SVG art exports do not gain extra shapes.
-
-Previous/next stroke buttons, the selected-stroke counter, and desktop shortcut hints are grouped above the right-hand shape list. 편집 안내점 is a compact legend beside the center canvas, containing endpoint/control/move marker descriptions and marker-size controls. On narrower windows it moves below the canvas instead of covering the artwork.
-
-## Overlay full-drawing view
-
-전체 도안 표시 switches the desktop overlay between all design strokes and the selected stroke only. Full view includes the entire saved design, independently of the editor construction-order slider, while editing handles remain limited to the current selection. Shape numbers follow the same view when enabled. Checking full view also reveals the overlay; unchecking returns to the selected-stroke view without clearing the selection. The preference is saved locally.
-
-Marker sizing is grouped with overlay alignment on the left (and remains available on the left in the browser edition). The center legend only describes marker meanings. Selected-stroke numeric details follow the right-hand stroke-order list. Alignment guidance notes that the game's reference lines are not a perfect circle: prioritize the center crossing and horizontal/vertical axes; use the rings as approximate scale references rather than forcing every circumference to coincide. The simulator's circle geometry is unchanged.
-
-## Quick development preview on Windows
-
-Double-click `Start-Development.cmd` in the project folder to run the current source, including changes on the NAS, without rebuilding or extracting a ZIP. It reads the Electron version from package.json and uses the local runtime cache. If the cache is absent but node_modules/electron/dist is available, it prepares that cache once. Node/npm are not needed for subsequent previews. A new computer without either runtime needs the normal one-time Node.js/npm dependency setup.
-
-Close any older packaged/development copy first to avoid global shortcut conflicts. Close and reopen the development app after source changes; this is not hot reload. Browser and ZIP workflows remain available. Build a distribution ZIP only when explicitly preparing a release. Run `Start-Development.cmd --self-test` to exercise this launcher with an isolated test profile. This launcher never changes the system PATH or PowerShell execution policy.
-
-Ctrl+Shift+F toggles 전체 도안 표시 globally in the desktop app. It uses the same checkbox behavior and saved preference: enabling full view reveals the overlay; disabling it returns to the selected stroke. The shortcut is listed in the right panel. Restart the development app after source updates to register it.
+Windows에서는 `Start-Development.cmd --self-test`로 개발판을, `Magigraph Studio.exe --self-test`로 배포판을 임시 프로필에서 테스트할 수 있습니다. 배포할 때는 `package.json`과 `package-lock.json`의 버전을 올리고, 빌드한 ZIP을 로컬에 압축 해제해 검증하세요. 테스트를 통과한 소스 커밋에 같은 버전의 태그를 붙이고 GitHub 릴리스에 Windows ZIP과 SHA-256 체크섬을 올립니다.

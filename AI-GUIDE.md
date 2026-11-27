@@ -66,9 +66,9 @@ Use design.schema.json to check structure. JSON Schema cannot prove geometric co
 
 If the browser environment supports page JavaScript execution, window.magigraph exposes:
 - getDesign(): returns an independent copy of the current JSON.
-- validate(design): checks the budget for the selected magigraph count, graph assignments, unique IDs, and stroke-aware circular containment. It throws on failure and leaves the drawing intact.
+- validate(design): checks the budget for the design's declared magigraph count, graph assignments, unique IDs, and stroke-aware circular containment. It throws on failure and leaves the drawing intact.
 - setDesign(design): validates, loads and records an undo step.
-- getGuide(): returns the construction guide text.
+- getGuide(): returns the construction guide for the whole design. Pass a graph number, such as getGuide(2), to get the numbered guide for that graph only.
 
 These are ordinary page JavaScript methods, not remotely accessible MCP/HTTP tools. Browser automation tools may forbid page mutation through evaluation; in that case use the visible JSON editor and JSON 적용 button instead. Do not bypass your tool's restrictions.
 
